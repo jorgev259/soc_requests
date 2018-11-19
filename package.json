@@ -1,0 +1,30 @@
+{
+  "name": "akira",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "node main.js http://localhost:8080/callback",
+    "start": "node main.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^5.0.1",
+    "body-parser": "^1.18.3",
+    "bufferutil": "^3.0.4",
+    "canvas": "github:Automattic/node-canvas",
+    "canvas-multiline-text": "^1.0.3",
+    "discord.js": "github:hydrabolt/discord.js",
+    "express": "^4.16.3",
+    "fabric": "^2.4.3",
+    "fs-extra": "^7.0.1",
+    "glob": "^7.1.2",
+    "simple-git": "^1.92.0",
+    "sqlite": "^2.9.2",
+    "text2png": "^2.1.0",
+    "twit": "^2.2.11",
+    "twitter": "^1.7.1",
+    "uws": "^8.14.0"
+  }
+}
