@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "canvas": "github:Automattic/node-canvas",
+    "canvas": "^2.1.0",
     "fabric": "^2.4.3",
     "twit": "^2.2.11",
     "twitter": "^1.7.1"
