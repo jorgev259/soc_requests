@@ -34,18 +34,36 @@ module.exports = {
               console.log(err)
               client.channels.find(c => c.name === 'tweet-approval-log').send(`A message couldnt be send in some channels. URL: ${url}`)
             })
+
+            sendLog(client, db, reaction, embed, 'tweet-approval-log')
             break
 
           case '❎':
             embed.setFooter(`Rejected by ${user}`)
+            sendLog(client, db, reaction, embed, 'tweet-approval-log')
+            break
+
+          case '❓':
+            await reaction.message.channel.send(`${user} type (or mention) the name of the channel where you want to send the tweet.`)
+            const filter = m => m.mentions.channels.size > 0 || reaction.message.guild.channels.some(c => c.name === m.content)
+            reaction.message.awaitMessages(filter, { max: 1 })
+              .then(collected => {
+                let channel = collected.first().name
+                if (collected.first().mentions.channels.size > 0) channel = collected.first().mentions.channels.first().name
+
+                sendLog(client, db, reaction, embed, channel)
+              })
             break
         }
-        db.prepare('DELETE FROM tweets WHERE id=?').run(reaction.message.id)
-
-        embed.setTimestamp()
-        client.channels.find(c => c.name === 'tweet-approval-log').send(embed)
-        reaction.message.delete()
       }
     }
   }
+}
+
+function sendLog (client, db, reaction, embed, channelName) {
+  db.prepare('DELETE FROM tweets WHERE id=?').run(reaction.message.id)
+
+  embed.setTimestamp()
+  client.channels.find(c => c.name === channelName).send(embed)
+  reaction.message.delete()
 }
