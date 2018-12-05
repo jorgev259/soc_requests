@@ -1,5 +1,5 @@
 let { stream } = require('./util.js')
-let reactions = ['✅', '❎']
+let reactions = ['✅', '❎','❓']
 
 module.exports = {
   async reqs (client, db) {
@@ -44,14 +44,26 @@ module.exports = {
             break
 
           case '❓':
-            await reaction.message.channel.send(`${user} type (or mention) the name of the channel where you want to send the tweet.`)
+            let question = await reaction.message.channel.send(`${user} type (or mention) the name of the channel where you want to send the tweet.`)
             const filter = m => m.mentions.channels.size > 0 || reaction.message.guild.channels.some(c => c.name === m.content)
-            reaction.message.awaitMessages(filter, { max: 1 })
+            reaction.message.channel.awaitMessages(filter, { max: 1 })
               .then(collected => {
-                let channel = collected.first().name
-                if (collected.first().mentions.channels.size > 0) channel = collected.first().mentions.channels.first().name
+                let channel
+                if (collected.first().mentions.channels.size > 0) channel = collected.first().mentions.channels.first()
+                else channel = reaction.message.guild.channels.find(c => c.name === collected.first().content)
 
-                sendLog(client, db, reaction, embed, channel)
+                embed.setFooter(`Accepted by ${user}`)
+
+                let url = db.prepare('SELECT channel,url FROM tweets WHERE id=?').all(reaction.message.id)[0].url
+                channel.send(url).catch(err => {
+                  console.log(err)
+                  client.channels.find(c => c.name === 'tweet-approval-log').send(`A message couldnt be send in some channels. URL: ${url}`)
+                })
+
+                
+                sendLog(client, db, reaction, embed, 'tweet-approval-log')
+                question.delete()
+                collected.first().delete()
               })
             break
         }

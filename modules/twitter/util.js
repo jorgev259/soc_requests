@@ -69,7 +69,9 @@ module.exports = {
           client.channels.find(c => c.name === 'tweet-approval').send(embed).then(m => {
             m.react('✅').then(() => {
               m.react('❎').then(() => {
-                db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, url, row.channel)
+                m.react('❓').then(() => {
+                  db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, url, row.channel)
+                })
               })
             })
           })
