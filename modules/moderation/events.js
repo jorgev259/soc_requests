@@ -5,6 +5,8 @@ module.exports = {
     async ready(client,db){
       let log = (await client.guilds.first().fetchAuditLogs({limit:1, type:72})).entries.first()
       let lastID = log.id
+
+      client.channels.find(c => c.name === 'admin').send('Killer of wonder has restarted!')
     },
 
     async messageDelete(client,db,m){
@@ -27,7 +29,6 @@ module.exports = {
 
         if(m.attachments.size > 0) embed.files = m.attachments.map(function(att){return {name:att.file.name,attachment:att.proxyURL}})
         m.guild.channels.find(c => c.name === 'admin-log').send(embed)
-        m.guild.channels.find(c => c.name === 'admin').send('Killer of wonder has restarted!')
       }
     }
   }
