@@ -28,7 +28,7 @@ module.exports = {
         }
 
         if(m.attachments.size > 0) embed.files = m.attachments.map(function(att){return {name:att.file.name,attachment:att.proxyURL}})
-        m.guild.channels.find(c => c.name === 'admin-log').send(embed)
+        if(embed.fields[0].value) m.guild.channels.find(c => c.name === 'admin-log').send(embed)
       }
     }
   }
