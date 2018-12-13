@@ -1,5 +1,5 @@
 const moment = require('moment')
-const chance = require('chance')
+const chance = require('chance').Chance()
 const { MessageEmbed } = require('discord.js')
 
 let greetings = [
