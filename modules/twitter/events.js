@@ -2,7 +2,7 @@ let { stream } = require('./util.js')
 let reactions = ['✅', '❎', '❓']
 
 module.exports = {
-  async reqs (client, db) {
+  reqs (client, db) {
     return new Promise((resolve, reject) => {
       db.prepare(
         'CREATE TABLE IF NOT EXISTS twitter (id TEXT, channel TEXT, PRIMARY KEY (id,channel))'
