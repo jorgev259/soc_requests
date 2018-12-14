@@ -93,7 +93,7 @@ module.exports = {
               `<@${sendId}> a Loremaster appears in front of you after taking a bite of the <:gjallardoodle:522816784580214804>. The loremaster says "Stay Frosty" as he hands ${ammount} <:gjallardoodle:522816784580214804> to you and ${
                 msg.author
               } and allows ${msg.author} to make another gift.`,
-              { files: ['modules/padoru/resources/MagicJoker.jpg'] }
+              { files: ['./modules/padoru/resources/MagicJoker.jpg'] }
             )
             db.prepare(
               'UPDATE greetingsReceived SET count=count+? WHERE id=?'
@@ -147,7 +147,7 @@ module.exports = {
           .attachFiles([
             {
               name: 'doodle.jpg',
-              attachment: 'modules/padoru/resources/doodle.jpg'
+              attachment: './modules/padoru/resources/doodle.jpg'
             }
           ])
           .setThumbnail('attachment://doodle.jpg')
