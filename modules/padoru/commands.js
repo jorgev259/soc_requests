@@ -9,7 +9,7 @@ let greetings = [
   '{user} threw a snowball to {sent}. Why does it have a <:gjallardoodle:522816784580214804> on it...',
   '{user} left something on the postmaster for {sent}. Its a <:gjallardoodle:522816784580214804>!',
   "{user} Slayed the finest ingredients for your <:gjallardoodle:522816784580214804> {sent} You should be thrilled they didn't use you!",
-  '{send} just got 2 tokens and a <:gjallardoodle:522816784580214804> from {user}',
+  '{sent} just got 2 tokens and a <:gjallardoodle:522816784580214804> from {user}',
   '{user} Worked very hard on these <:gjallardoodle:522816784580214804> just for you. {sent} Treat them with the same kindness. No Burnt Edge Transits.',
   "{user} gifted you a <:gjallardoodle:522816784580214804>. Eva's are tastier though...",
   '{user} gifted you a <:gjallardoodle:522816784580214804>. Worthy of an Ahamkara wish!',
