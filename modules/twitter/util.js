@@ -20,6 +20,7 @@ module.exports = {
     stream.on('tweet', async function (tweet) {
       if (Object.keys(streams).includes(tweet.user.id_str) || tweet.retweeted) {
         let twit = tweet
+        console.log(twit)
         if (tweet.retweeted_status) twit = tweet.retweeted_status
 
         let embed = new MessageEmbed()
