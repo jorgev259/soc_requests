@@ -31,7 +31,15 @@ module.exports = {
 
         let textArray = twit.text.split(' ')
         let url = `https://twitter.com/${twit.user.screen_name}/status/${twit.id_str}/`
+        
+        let sendText = ''
+        if(twit.quoted_status){
+          embed.addField('Quoted Tweet', twit.quoted_status.text)
+          embed.addField('Quoted Tweet URL', twit.quoted_status_permalink.expanded)
 
+          sendText += twit.quoted_status_permalink.expanded
+        }
+        sendText +=  ` ${url}`
         embed.addField('Tweet', textArray.join(' '))
         embed.addField('URL', url)
         embed.addField('Channel', 'Test channel')
@@ -71,7 +79,7 @@ module.exports = {
             m.react('✅').then(() => {
               m.react('❎').then(() => {
                 m.react('❓').then(() => {
-                  db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, url, row.channel)
+                  db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, sendText, row.channel)
                 })
               })
             })
