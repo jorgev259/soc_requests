@@ -29,20 +29,21 @@ module.exports = {
           .setColor(twit.user.profile_background_color)
           .setTimestamp()
 
-        let textArray = twit.text.split(' ')
         let url = `https://twitter.com/${twit.user.screen_name}/status/${twit.id_str}/`
         
         let sendText = ''
-        if(twit.quoted_status){
-          embed.addField('Quoted Tweet', twit.quoted_status.text)
-          embed.addField('Quoted Tweet URL', twit.quoted_status_permalink.expanded)
+        if(twit.quoted_status) sendText += twit.quoted_status_permalink.expanded
 
-          sendText += twit.quoted_status_permalink.expanded
-        }
         sendText +=  ` ${url}`
-        embed.addField('Tweet', textArray.join(' '))
+
+        if(twit.quoted_status) embed.addField('Quoted Tweet', twit.quoted_status.text)
+        embed.addField('Tweet', twit.extended_tweet.full_text.split(' ').slice(-1).join(' '))
+       
+        if(twit.quoted_status) embed.addField('Quoted Tweet URL', twit.quoted_status_permalink.expanded)
         embed.addField('URL', url)
+        
         embed.addField('Channel', 'Test channel')
+        
         if (tweet.retweeted_status) embed.addField('Retweeted by', tweet.user.screen_name)
 
         if (twit.extended_entities && twit.extended_entities.media) {
@@ -73,7 +74,7 @@ module.exports = {
         let stmt = db.prepare('SELECT channel FROM twitter WHERE id=?')
 
         for (const row of stmt.iterate(tweet.user.id_str)) {
-          embed.fields[2].value = `#${row.channel}`
+          embed.fields[embed.fields.findIndex(item => item.name === "Channel")].value = `#${row.channel}`
 
           client.channels.find(c => c.name === 'tweet-approval').send(embed).then(m => {
             m.react('✅').then(() => {
