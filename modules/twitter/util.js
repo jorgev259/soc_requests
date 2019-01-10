@@ -36,8 +36,8 @@ module.exports = {
 
         sendText +=  ` ${url}`
 
-        if(twit.quoted_status) embed.addField('Quoted Tweet', twit.quoted_status.text.split(' ').slice(-1).join(' '))
-        if(twit.extended_tweet) embed.addField('Tweet', twit.extended_tweet.full_text.split(' ').slice(-1).join(' '))
+        if(twit.quoted_status) embed.addField('Quoted Tweet', twit.quoted_status.text.split(' ').slice(0,-1).join(' '))
+        if(twit.extended_tweet) embed.addField('Tweet', twit.extended_tweet.full_text.split(' ').slice(0,-1).join(' '))
         else embed.addField('Tweet', twit.text)
         
        
