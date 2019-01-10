@@ -39,10 +39,11 @@ module.exports = {
         if(twit.quoted_status) embed.addField('Quoted Tweet', twit.quoted_status.text.split(' ').slice(0,-1).join(' '))
         if(twit.extended_tweet) embed.addField('Tweet', twit.extended_tweet.full_text.split(' ').slice(0,-1).join(' '))
         else embed.addField('Tweet', twit.text)
-        
+        embed.addBlankField()
        
         if(twit.quoted_status) embed.addField('Quoted Tweet URL', twit.quoted_status_permalink.expanded)
         embed.addField('URL', url)
+        embed.addBlankField()
         
         embed.addField('Channel', 'Test channel')
         
