@@ -5,13 +5,16 @@ module.exports = {
   commands: {
     twitteradd: {
       desc:
-        'Adds a twitter account to a designated channel for automatic posting. Usage: >twitteradd [username] [channel]',
+        'Adds a twitter account to a designated channel for automatic posting. Usage: >twitteradd [username] [channel] [auto]',
       async execute (client, msg, param, db) {
         if (!param[2]) {
-          return msg.channel.send('Usage: twitter add username channel')
+          return msg.channel.send('Usage: twitter add username channel [auto]')
         }
         let username = param[1]
         let channel = param[2]
+        let auto = false
+
+        if (param[3] && param[3].toLowerCase() === 'auto') auto = true
 
         if (msg.mentions.channels.size > 0) {
           channel = msg.mentions.channels.first().name
@@ -24,9 +27,10 @@ module.exports = {
           .get('users/show', { screen_name: username })
           .then(res => {
             stream(client, db, [res.data.id_str])
-            db.prepare('INSERT INTO twitter (id,channel) VALUES (?,?)').run(
+            db.prepare('INSERT INTO twitter (id,channel,auto) VALUES (?,?,?)').run(
               res.data.id_str,
-              channel
+              channel,
+              auto
             )
             msg.channel.send('Account added!')
           })

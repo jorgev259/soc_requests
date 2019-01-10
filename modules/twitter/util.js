@@ -30,23 +30,23 @@ module.exports = {
           .setTimestamp()
 
         let url = `https://twitter.com/${twit.user.screen_name}/status/${twit.id_str}/`
-        
+
         let sendText = ''
-        if(twit.quoted_status) sendText += twit.quoted_status_permalink.expanded
+        if (twit.quoted_status) sendText += twit.quoted_status_permalink.expanded
 
-        sendText +=  ` ${url}`
+        sendText += ` ${url}`
 
-        if(twit.quoted_status) embed.addField('Quoted Tweet', twit.quoted_status.text.split(' ').slice(0,-1).join(' '))
-        if(twit.extended_tweet) embed.addField('Tweet', twit.extended_tweet.full_text.split(' ').slice(0,-1).join(' '))
+        if (twit.quoted_status) embed.addField('Quoted Tweet', twit.quoted_status.text.split(' ').slice(0, -1).join(' '))
+        if (twit.extended_tweet) embed.addField('Tweet', twit.extended_tweet.full_text.split(' ').slice(0, -1).join(' '))
         else embed.addField('Tweet', twit.text)
         embed.addBlankField()
-       
-        if(twit.quoted_status) embed.addField('Quoted Tweet URL', twit.quoted_status_permalink.expanded)
+
+        if (twit.quoted_status) embed.addField('Quoted Tweet URL', twit.quoted_status_permalink.expanded)
         embed.addField('URL', url)
         embed.addBlankField()
-        
+
         embed.addField('Channel', 'Test channel')
-        
+
         if (tweet.retweeted_status) embed.addField('Retweeted by', tweet.user.screen_name)
 
         if (twit.extended_entities && twit.extended_entities.media) {
@@ -74,25 +74,79 @@ module.exports = {
           }
         }
 
-        let stmt = db.prepare('SELECT channel FROM twitter WHERE id=?')
+        let stmt = db.prepare('SELECT channel,auto,id FROM twitter WHERE id=?')
 
         for (const row of stmt.iterate(tweet.user.id_str)) {
-          embed.fields[embed.fields.findIndex(item => item.name === "Channel")].value = `#${row.channel}`
+          switch (row.channel) {
+            case 'false':
+              embed.fields[embed.fields.findIndex(item => item.name === 'Channel')].value = `#${row.channel}`
 
-          client.channels.find(c => c.name === 'tweet-approval').send(embed).then(m => {
-            m.react('✅').then(() => {
-              m.react('❎').then(() => {
-                m.react('❓').then(() => {
-                  db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, sendText, row.channel)
+              client.channels.find(c => c.name === 'tweet-approval').send(embed).then(m => {
+                m.react('✅').then(() => {
+                  m.react('❎').then(() => {
+                    m.react('❓').then(() => {
+                      db.prepare('INSERT INTO tweets (id,url,channel) VALUES (?,?,?)').run(m.id, sendText, row.channel)
+                    })
+                  })
                 })
               })
-            })
-          })
+              break
+
+            case 'true':
+              approveTweet('auto', row.id, client, embed, client.user, db)
+              break
+          }
         }
       }
     })
     stream.on('error', function (err) {
       log(client, err.message)
     })
+  },
+
+  approveTweet: approveTweet,
+  sendLog: sendLog
+}
+
+function sendLog (client, db, reaction, embed, channelName) {
+  db.prepare('DELETE FROM tweets WHERE id=?').run(reaction.message.id)
+
+  embed.setTimestamp()
+  client.channels.find(c => c.name === channelName).send(embed)
+  reaction.message.delete()
+}
+
+function approveTweet (type, id, client, embed, user, db) {
+  embed.setFooter(`Accepted by ${user}`)
+  let url = ''
+  if (type === 'message') {
+    let msgs = db
+      .prepare('SELECT channel,url FROM tweets WHERE id=?')
+      .all(id)
+      .map(row => {
+        url = row.url
+        return client.channels
+          .find(c => c.name === row.channel)
+          .send(row.url)
+      })
+
+    Promise.all(msgs).catch(err => {
+      console.log(err)
+      client.channels
+        .find(c => c.name === 'tweet-approval-log')
+        .send(`A message couldnt be send in some channels. URL: ${url}`)
+    })
+  } else {
+    let msgs2 = db
+      .prepare('SELECT channel,url FROM twitter WHERE auto="true" AND id=?')
+      .all(reaction.message.id)
+      .map(row => {
+        url = row.url
+        return client.channels
+          .find(c => c.name === row.channel)
+          .send(row.url)
+      })
   }
+
+  sendLog(client, db, reaction, embed, 'tweet-approval-log')
 }
