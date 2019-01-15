@@ -102,7 +102,7 @@ module.exports = {
 }
 
 async function screenshotTweet (id) {
-  const browser = await puppeteer.launch()
+  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] })
   const page = await browser.newPage()
   page.setViewport({ width: 1000, height: 600, deviceScaleFactor: 5 })
 
