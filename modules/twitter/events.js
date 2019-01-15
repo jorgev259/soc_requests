@@ -1,4 +1,4 @@
-let { stream, approveTweet, sendLog } = require('./util.js')
+let { stream } = require('./util.js')
 let reactions = ['✅', '❎', '❓']
 
 module.exports = {
@@ -36,7 +36,26 @@ module.exports = {
 
         switch (reaction.emoji.name) {
           case '✅':
-            approveTweet('message', reaction.message.id, client, embed, user, db)
+            embed.setFooter(`Accepted by ${user}`)
+            let url = ''
+            let msgs = db
+              .prepare('SELECT channel,url FROM tweets WHERE id=?')
+              .all(reaction.message.id)
+              .map(row => {
+                url = row.url
+                return client.channels
+                  .find(c => c.name === row.channel)
+                  .send(row.url)
+              })
+
+            Promise.all(msgs).catch(err => {
+              console.log(err)
+              client.channels
+                .find(c => c.name === 'tweet-approval-log')
+                .send(`A message couldnt be send in some channels. URL: ${url}`)
+            })
+
+            sendLog(client, db, reaction, embed, 'tweet-approval-log')
             break
 
           case '❎':
@@ -84,4 +103,12 @@ module.exports = {
       }
     }
   }
+}
+
+function sendLog (client, db, reaction, embed, channelName) {
+  db.prepare('DELETE FROM tweets WHERE id=?').run(reaction.message.id)
+
+  embed.setTimestamp()
+  client.channels.find(c => c.name === channelName).send(embed)
+  reaction.message.delete()
 }
