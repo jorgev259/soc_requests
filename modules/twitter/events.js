@@ -42,10 +42,9 @@ module.exports = {
               .prepare('SELECT channel,url FROM tweets WHERE id=?')
               .all(reaction.message.id)
               .map(row => {
-                url = row.url
                 return client.channels
                   .find(c => c.name === row.channel)
-                  .send(row.url)
+                  .send({ content: `<${row.url}>`, files: [`temp/${row.url.split('/').slice(-2)[0]}.png`] })
               })
 
             Promise.all(msgs).catch(err => {
