@@ -106,7 +106,7 @@ async function screenshotTweet (id) {
   const page = await browser.newPage()
   page.setViewport({ width: 1000, height: 600, deviceScaleFactor: 5 })
 
-  await page.goto(path.join(__dirname, `index.html?id=${id}`), {
+  await page.goto(path.join('file://', __dirname, `index.html?id=${id}`), {
     waitUntil: 'networkidle0' // ensures images are loaded
   })
 
