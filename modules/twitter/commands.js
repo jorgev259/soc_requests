@@ -1,5 +1,6 @@
 let { twitter, stream } = require('./util.js')
 const { log } = require('../../utilities.js')
+let { screenshotTweet, queue } = require('./util.js')
 
 module.exports = {
   commands: {
@@ -79,6 +80,29 @@ module.exports = {
             console.log(err)
             msg.channel.send('Something went wrong')
           }
+        })
+      }
+    },
+    twitterpost: {
+      desc: 'Posts the given tweet on a channel. Usage: >twitterpost [channel] [url]',
+      async execute (client, msg, param, db) {
+        if (!param[2]) {
+          return msg.channel.send('Usage: >twitterpost [channel] [url]')
+        }
+        let channel = param[1]
+        let url = param[2]
+
+        if (msg.mentions.channels.size > 0) {
+          channel = msg.mentions.channels.first()
+        } else if (!msg.guild.channels.some(c => c.name === channel)) {
+          return msg.channel.send('Channel doesnt exist')
+        } else {
+          channel = msg.guild.channels.find(c => c.name === channel).first()
+        }
+
+        let id = url.split('/').filter(e => e !== '').slice(-1)[0]
+        queue.add(() => screenshotTweet(id)).then(shotBuffer => {
+          channel.send({ content: `<${url}>`, files: [shotBuffer] })
         })
       }
     }
