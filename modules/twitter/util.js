@@ -42,6 +42,7 @@ module.exports = {
 
           let url = `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}/`
 
+          embed.addField('URL', url)
           embed.addField('Channel', 'Test channel')
           embed.attachFiles([{ name: 'imageTweet.png', attachment: shotBuffer }])
             .setImage('attachment://imageTweet.png')
