@@ -125,6 +125,6 @@ async function screenshotTweet (id) {
       height: rect.height
     }
   })
-
+  page.close()
   return buffer
 }
