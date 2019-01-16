@@ -100,9 +100,11 @@ module.exports = {
           channel = msg.guild.channels.find(c => c.name === channel).first()
         }
 
-        let id = url.split('/').filter(e => e !== '').slice(-1)[0]
-        queue.add(() => screenshotTweet(id)).then(shotBuffer => {
-          channel.send({ content: `<${url}>`, files: [shotBuffer] })
+        let id = url.split('/').filter(e => e !== '').slice(-1)[0].split('?')[0]
+        let queueMsg = await msg.channel.send(`Processing your request.... ${queue.size > 0 ? `Queue: ${queue.size}` : 'right now!'} `)
+        queue.add(() => screenshotTweet(id)).then(async shotBuffer => {
+          await channel.send({ content: `<${url}>`, files: [shotBuffer] })
+          queueMsg.edit('Tweet processed!')
         })
       }
     }
