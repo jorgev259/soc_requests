@@ -31,7 +31,7 @@ module.exports = {
 
     stream.on('tweet', async function (tweet) {
       if (Object.keys(streams).includes(tweet.user.id_str) || tweet.retweeted) {
-        queue.add(() => screenshotTweet(tweet.id_str)).then(async shotBuffer => {
+        queue.add(() => screenshotTweet(client, tweet.id_str)).then(async shotBuffer => {
           let out = {}
 
           let embed = new MessageEmbed()
@@ -101,30 +101,35 @@ module.exports = {
   }
 }
 
-async function screenshotTweet (id) {
-  if (!browser) browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] })
-  const page = await browser.newPage()
-  page.setViewport({ width: 1000, height: 600, deviceScaleFactor: 5 })
+function screenshotTweet (client, id) {
+  return new Promise(async (resolve, reject) => {
+    if (!browser) browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] })
+    const page = await browser.newPage()
+    page.setViewport({ width: 1000, height: 600, deviceScaleFactor: 5 })
 
-  await page.goto(path.join('file://', __dirname, `index.html?id=${id}`), {
-    waitUntil: 'networkidle0' // ensures images are loaded
-  })
+    page.goto(path.join('file://', __dirname, `index.html?id=${id}`), {
+      waitUntil: 'networkidle0' // ensures images are loaded
+    }).then(async () => {
+      const rect = await page.evaluate(() => {
+        const element = document.querySelector('#container')
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { left: x, top: y, width, height, id: element.id }
+      })
 
-  const rect = await page.evaluate(() => {
-    const element = document.querySelector('#container')
-    const { x, y, width, height } = element.getBoundingClientRect()
-    return { left: x, top: y, width, height, id: element.id }
+      let buffer = await page.screenshot({
+        path: `temp/${id}.png`,
+        clip: {
+          x: rect.left,
+          y: rect.top,
+          width: 550,
+          height: rect.height
+        }
+      })
+      await page.close()
+      resolve(buffer)
+    }).catch(err => {
+      log(client, path.join('file://', __dirname, `index.html?id=${id}`))
+      log(client, err.stack)
+    })
   })
-
-  let buffer = await page.screenshot({
-    path: `temp/${id}.png`,
-    clip: {
-      x: rect.left,
-      y: rect.top,
-      width: 550,
-      height: rect.height
-    }
-  })
-  await page.close()
-  return buffer
 }
