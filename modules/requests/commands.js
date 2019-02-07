@@ -15,7 +15,7 @@ module.exports = {
 
         let name = param.slice(1).join(' ')
 
-        msg.guild.channels.find(c => c.name === 'requests-submission').send(`Request: ${name}\nBy: ${msg.author}`)
+        msg.guild.channels.find(c => c.name === 'open-requests').send(`Request: ${name}\nBy: ${msg.author}`)
           .then(m => {
             db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, m.id)
             msg.channel.send('Request submitted.')
@@ -50,7 +50,7 @@ module.exports = {
         db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(user.id, req.request, link)
         db.prepare('DELETE FROM requests WHERE user=?').run(user.id)
 
-        msg.guild.channels.find(c => c.name === 'requests-submission').messages.fetch(req.msg).then(async m => {
+        msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
           msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: ${user}\nState: Completed by ${msg.author}\nLink: ${link}`)
 
@@ -81,7 +81,7 @@ module.exports = {
         db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(user.id, req.request, reason)
         db.prepare('DELETE FROM requests WHERE user=?').run(user.id)
 
-        msg.guild.channels.find(c => c.name === 'requests-submission').messages.fetch(req.msg).then(async m => {
+        msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
           msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: ${user}\nState: Rejected by ${msg.author}\nReason: ${reason}`)
 
