@@ -85,7 +85,7 @@ module.exports = {
           await m.delete()
           msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: ${user}\nState: Rejected by ${msg.author}\nReason: ${reason}`)
 
-          msg.guild.channels.find(c => c.name === 'requests-talk').send(`The request ${req.request} from ${user} has been Rejected.\nReason: ${reason}`)
+          msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from ${user} has been rejected.\nReason: ${reason}`)
         })
       }
     }
