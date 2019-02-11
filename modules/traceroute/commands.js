@@ -11,7 +11,8 @@ module.exports = {
         trace.on('readable', function () {
           var hop = null
           while (hop = this.read()) {
-            msg.channel.send(hop)
+            console.log(hop)
+            if(hop) msg.channel.send(hop)
           }
         })
 
