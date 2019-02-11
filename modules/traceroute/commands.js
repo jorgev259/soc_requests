@@ -1,7 +1,7 @@
 const Traceroute = require('nodejs-traceroute')
 module.exports = {
   commands: {
-    traceroute: {
+    trace: {
       desc: 'Perform a traceroute',
       usage: '>trace [url or ip]',
       execute (client, msg, param, db) {
