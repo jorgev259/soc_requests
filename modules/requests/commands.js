@@ -1,7 +1,11 @@
+let requestCount = 0
+let limit = 20
+
 module.exports = {
   async reqs (client, db) {
     db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, PRIMARY KEY (user))').run()
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
+    requestCount = db.prepare('SELECT COUNT(*) as count FROM requests').get().count
   },
   commands: {
     request: {
@@ -18,6 +22,7 @@ module.exports = {
         msg.guild.channels.find(c => c.name === 'open-requests').send(`Request: ${name}\nBy: ${msg.author}`)
           .then(m => {
             db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, m.id)
+            lock(msg, 1)
             msg.channel.send('Request submitted.')
           })
           .catch(err => {
@@ -49,6 +54,7 @@ module.exports = {
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(user.id, req.request, link)
         db.prepare('DELETE FROM requests WHERE user=?').run(user.id)
+        lock(msg, -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
@@ -80,6 +86,7 @@ module.exports = {
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(user.id, req.request, reason)
         db.prepare('DELETE FROM requests WHERE user=?').run(user.id)
+        lock(msg, -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
@@ -89,5 +96,40 @@ module.exports = {
         })
       }
     }
+  }
+}
+
+function lock (msg, ammount) {
+  let channel = msg.guild.channels.find(c => c.name === 'requests-submission')
+  requestCount += ammount
+  let perms = []
+  let change = true
+  if (requestCount >= limit) {
+    channel.send('No more requests allowed')
+    perms = [
+      {
+        id: msg.guild.roles.find(r => r.name === 'BOTs').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.id,
+        deny: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      }
+    ]
+  } else if (requestCount === limit - 1 && ammount === -1) {
+    channel.send('Requests open')
+    perms = [
+      {
+        id: msg.guild.id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      }
+    ]
+  } else change = false
+  if (change) {
+    console.log(perms)
+    channel.overwritePermissions({
+      permissionOverwrites: perms,
+      reason: 'Submission locking/enabling'
+    })
   }
 }
