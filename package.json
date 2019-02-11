@@ -6,6 +6,7 @@
     "chance": "^1.0.18",
     "fabric": "^2.4.3",
     "moment": "^2.23.0",
+    "nodejs-traceroute": "^1.1.1",
     "p-queue": "^3.0.0",
     "puppeteer": "^1.11.0",
     "text2png": "^2.1.0",
