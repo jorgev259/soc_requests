@@ -71,17 +71,17 @@ module.exports.commands = {
         },
         {
           name: 'Channel Categories',
-          value: guild.channels.filter(c => c.type === 'category'),
+          value: guild.channels.filter(c => c.type === 'category').size,
           inline: true
         },
         {
           name: 'Text Channels',
-          value: guild.channels.filter(c => c.type === 'text'),
+          value: guild.channels.filter(c => c.type === 'text').size,
           inline: true
         },
         {
           name: `Voice Channels`,
-          value: guild.channels.filter(c => c.type === 'voice'),
+          value: guild.channels.filter(c => c.type === 'voice').size,
           inline: true
         },
         {
@@ -106,7 +106,7 @@ module.exports.commands = {
         },
         {
           name: 'Roles',
-          value: guild.channels.filter(c => c.type === 'text'),
+          value: guild.roles.size,
           inline: true
         }
       ]
