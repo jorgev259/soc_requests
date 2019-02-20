@@ -10,12 +10,14 @@ module.exports = {
 
         try {
           const tracer = new Traceroute()
-          let sent = await msg.channel.send('Starting', { code: true })
+          let content = 'Starting'
+          let sent = await msg.channel.send(content, { code: true })
+
           tracer
-            .on('pid', pid => sent.edit(`${sent.content}\npid: ${pid}`, { code: true }))
-            .on('destination', destination => sent.edit(`${sent.content}\ndestination: ${destination}`, { code: true }))
-            .on('hop', hop => sent.edit(`${sent.content}\n${hop.hop}) ${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip} ${hop.rtt1 ? hop.rtt1 : ''}`, { code: true }))
-            .on('close', code => sent.edit(`${sent.content}\nclose: code ${code}`, { code: true }))
+            .on('pid', pid => info(sent, content, `pid: ${pid}`))
+            .on('destination', destination => info(sent, content, `destination: ${destination}`))
+            .on('hop', hop => info(sent, content, `${hop.hop}) ${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip} ${hop.rtt1 ? hop.rtt1 : ''}`))
+            .on('close', code => info(sent, content, `close: code ${code}`))
 
           tracer.trace(param[1])
         } catch (ex) {
@@ -24,4 +26,9 @@ module.exports = {
       }
     }
   }
+}
+
+function info (sent, content, info) {
+  content += `\n${info}`
+  sent.edit(content, { code: true })
 }
