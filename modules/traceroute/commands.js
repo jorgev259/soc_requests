@@ -1,4 +1,5 @@
 const Traceroute = require('nodejs-traceroute')
+let msgs = {}
 
 module.exports = {
   commands: {
@@ -10,18 +11,24 @@ module.exports = {
 
         try {
           const tracer = new Traceroute()
+          let pid
           tracer
-            .on('pid', (pid) => {
-              msg.channel.send(`pid: ${pid}`)
+            .on('pid', async (pidIn) => {
+              pid = pidIn
+              msgs[pid].text = `pid: ${pid}`
+              msgs[pid].msg = await msg.channel.send(msgs[pid].text, { code: true })
             })
             .on('destination', (destination) => {
-              msg.channel.send(`destination: ${destination}`)
+              msgs[pid].text += `\ndestination: ${destination}`
+              msg.channel.edit(msgs[pid].text, { code: true })
             })
             .on('hop', (hop) => {
-              msg.channel.send(`hop: ${hop.hop}\n${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip}\n${hop.rtt1 ? hop.rtt1 : ''}`, { code: true })
+              msgs[pid].text += `\nhop: ${hop.hop}\n${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip}\n${hop.rtt1 ? hop.rtt1 : ''}`
+              msg.channel.edit(msgs[pid].text, { code: true })
             })
             .on('close', (code) => {
-              msg.channel.send(`close: code ${code}`)
+              msgs[pid].text += `\nclose: code ${code}`
+              msg.channel.edit(msgs[pid].text, { code: true })
             })
 
           tracer.trace(param[1])
