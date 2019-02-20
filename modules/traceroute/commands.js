@@ -41,7 +41,7 @@ function handleDestination (pid, destination) {
 }
 
 function handlehop (pid, hop) {
-  msgs[pid].text += `\nhop: ${hop.hop}\n${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip}\n${hop.rtt1 ? hop.rtt1 : ''}`
+  msgs[pid].text += `\n${hop.hop}) ${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip} ${hop.rtt1 ? hop.rtt1 : ''}`
   msgs[pid].msg.edit(msgs[pid].text, { code: true })
 }
 
