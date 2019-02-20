@@ -17,7 +17,7 @@ module.exports = {
               pid = pidIn
               msgs[pid] = {
                 text: `pid: ${pid}`,
-                msg: await msg.channel.send(msgs[pid].text, { code: true })
+                msg: await msg.channel.send(`pid: ${pid}`, { code: true })
               }
             })
             .on('destination', (destination) => {
