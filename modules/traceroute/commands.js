@@ -1,30 +1,21 @@
 const Traceroute = require('nodejs-traceroute')
-let msgs = {}
 
 module.exports = {
   commands: {
     trace: {
       desc: 'Perform a traceroute',
       usage: '>trace [url or ip]',
-      execute (client, msg, param, db) {
+      async execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Please provide a url or ip')
 
         try {
           const tracer = new Traceroute()
-          let pid
+          let sent = await msg.channel.send('Starting', { code: true })
           tracer
-            .on('pid', async (pidIn) => {
-              pid = pidIn
-              msgs[pid] = {
-                text: `pid: ${pid}`,
-                msg: await msg.channel.send(`pid: ${pid}`, { code: true })
-              }
-
-              tracer
-                .on('destination', destination => handleDestination(pid, destination))
-                .on('hop', hop => handlehop(pid, hop))
-                .on('close', code => handleClose(pid, code))
-            })
+            .on('pid', pid => sent.edit(`${sent.content}\npid: ${pid}`, { code: true }))
+            .on('destination', destination => sent.edit(`${sent.content}\ndestination: ${destination}`, { code: true }))
+            .on('hop', hop => sent.edit(`${sent.content}\n${hop.hop}) ${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip} ${hop.rtt1 ? hop.rtt1 : ''}`, { code: true }))
+            .on('close', code => sent.edit(`${sent.content}\nclose: code ${code}`, { code: true }))
 
           tracer.trace(param[1])
         } catch (ex) {
@@ -33,20 +24,4 @@ module.exports = {
       }
     }
   }
-}
-
-function handleDestination (pid, destination) {
-  msgs[pid].text += `\ndestination: ${destination}`
-  msgs[pid].msg.edit(msgs[pid].text, { code: true })
-}
-
-function handlehop (pid, hop) {
-  msgs[pid].text += `\n${hop.hop}) ${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip} ${hop.rtt1 ? hop.rtt1 : ''}`
-  msgs[pid].msg.edit(msgs[pid].text, { code: true })
-}
-
-function handleClose (pid, code) {
-  msgs[pid].text += `\nclose: code ${code}`
-  msgs[pid].msg.edit(msgs[pid].text, { code: true })
-  delete msgs[pid]
 }
