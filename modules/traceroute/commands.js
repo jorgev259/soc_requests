@@ -19,18 +19,11 @@ module.exports = {
                 text: `pid: ${pid}`,
                 msg: await msg.channel.send(`pid: ${pid}`, { code: true })
               }
-            })
-            .on('destination', (destination) => {
-              msgs[pid].text += `\ndestination: ${destination}`
-              msg.channel.edit(msgs[pid].text, { code: true })
-            })
-            .on('hop', (hop) => {
-              msgs[pid].text += `\nhop: ${hop.hop}\n${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip}\n${hop.rtt1 ? hop.rtt1 : ''}`
-              msg.channel.edit(msgs[pid].text, { code: true })
-            })
-            .on('close', (code) => {
-              msgs[pid].text += `\nclose: code ${code}`
-              msg.channel.edit(msgs[pid].text, { code: true })
+
+              tracer
+                .on('destination', destination => handleDestination(pid, destination))
+                .on('hop', hop => handlehop(pid, hop))
+                .on('close', code => handleClose(pid, code))
             })
 
           tracer.trace(param[1])
@@ -40,4 +33,20 @@ module.exports = {
       }
     }
   }
+}
+
+function handleDestination (pid, destination) {
+  msgs[pid].text += `\ndestination: ${destination}`
+  msgs[pid].msg.edit(msgs[pid].text, { code: true })
+}
+
+function handlehop (pid, hop) {
+  msgs[pid].text += `\nhop: ${hop.hop}\n${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip}\n${hop.rtt1 ? hop.rtt1 : ''}`
+  msgs[pid].msg.edit(msgs[pid].text, { code: true })
+}
+
+function handleClose (pid, code) {
+  msgs[pid].text += `\nclose: code ${code}`
+  msgs[pid].msg.edit(msgs[pid].text, { code: true })
+  delete msgs[pid]
 }
