@@ -128,12 +128,16 @@ module.exports = {
         let place = 0
         let promises = db.prepare(`SELECT activity,user FROM activity WHERE guild=? ORDER BY activity DESC LIMIT ${param[1]}`).all(msg.guild.id).map(async row => {
           return new Promise(async (resolve, reject) => {
-            let { user } = await msg.guild.members.fetch(row.user)
-            place++
-            resolve(`\n${place}) ${user.tag}: ${row.activity} messages`)
+            try {
+              let { user } = await msg.guild.members.fetch(row.user)
+              place++
+              resolve(`\n${place}) ${user.tag}: ${row.activity} messages`)
+            } catch (err) {
+              resolve(null)
+            }
           })
         })
-        Promise.all(promises).then(resolved => msg.channel.send(resolved.join(''), { code: true }))
+        Promise.all(promises).then(resolved => msg.channel.send(resolved.filter(e => e != null).join(''), { code: true }))
       }
     }
   }
