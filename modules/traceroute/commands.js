@@ -15,8 +15,10 @@ module.exports = {
           tracer
             .on('pid', async (pidIn) => {
               pid = pidIn
-              msgs[pid].text = `pid: ${pid}`
-              msgs[pid].msg = await msg.channel.send(msgs[pid].text, { code: true })
+              msgs[pid] = {
+                text: `pid: ${pid}`,
+                msg: await msg.channel.send(msgs[pid].text, { code: true })
+              }
             })
             .on('destination', (destination) => {
               msgs[pid].text += `\ndestination: ${destination}`
