@@ -1,7 +1,7 @@
 {
   "name": "dsr_joker",
   "dependencies": {
-    "http-traceroute": "^1.7.4",
+    "nodejs-traceroute": "github:jorgev259/nodejs-traceroute",
     "moment": "^2.24.0"
   }
 }

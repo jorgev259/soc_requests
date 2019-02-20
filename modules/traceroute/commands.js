@@ -1,4 +1,3 @@
-var TraceRoute = require('http-traceroute')
 const Traceroute = require('nodejs-traceroute')
 
 module.exports = {
@@ -8,19 +7,7 @@ module.exports = {
       usage: '>trace [url or ip]',
       execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Please provide a url or ip')
-        /* var trace = new TraceRoute(param[1])
 
-        trace.on('readable', function () {
-          var hop = null
-          while (hop = this.read()) {
-            console.log(hop)
-            if(hop) msg.channel.send(hop)
-          }
-        })
-
-        trace.once('error', function () { msg.channel.send('Something went wrong') })
-        trace.once('end', function () { msg.channel.send('Finished') }) */
-        
         try {
           const tracer = new Traceroute()
           tracer
@@ -31,7 +18,7 @@ module.exports = {
               msg.channel.send(`destination: ${destination}`)
             })
             .on('hop', (hop) => {
-              msg.channel.send(`hop: ${JSON.stringify(hop)}`)
+              msg.channel.send(`hop: ${hop.hop}\n${hop.hostname ? `${hop.hostname} (${hop.ip})` : hop.ip}\n${hop.rtt1 ? hop.rtt1 : ''}`, { code: true })
             })
             .on('close', (code) => {
               msg.channel.send(`close: code ${code}`)
