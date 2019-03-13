@@ -2,6 +2,7 @@
   "name": "dsr_joker",
   "dependencies": {
     "nodejs-traceroute": "github:jorgev259/nodejs-traceroute",
-    "moment": "^2.24.0"
+    "moment": "^2.24.0",
+    "speedtest-net": "^1.5.1"
   }
 }
