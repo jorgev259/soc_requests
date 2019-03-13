@@ -16,6 +16,7 @@ module.exports.events = {
     })
   },
   async message (client, db, moduleName, msg) {
+    if (!msg.member) return
     db.prepare('INSERT OR IGNORE INTO activity (guild,user,activity) VALUES (?,?,0)').run(msg.guild.id, msg.author.id)
     db.prepare('UPDATE activity set activity = activity + 1 WHERE user =? AND guild=?').run(msg.author.id, msg.guild.id)
   }
