@@ -27,7 +27,7 @@ module.exports = {
           let url = filterUrls[0]
           get(url.replace('vgmdb.net', 'vgmdb.info')).then(res => {
             let { data } = res
-            submit(msg, db, `${data.name} (https://vgmdb.net/${data.link})`, { files: [data.picture_thumb] })
+            submit(msg, db, `${data.name} (https://vgmdb.net/${data.link})`, { files: [data.picture_small] })
           }).catch(err => catchErr(msg, err))
         } else {
           submit(msg, db, name)
