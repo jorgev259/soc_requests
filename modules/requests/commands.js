@@ -1,5 +1,6 @@
 let requestCount = 0
 let limit = 20
+const { get } = require('axios')
 
 module.exports = {
   async reqs (client, db) {
@@ -19,16 +20,18 @@ module.exports = {
 
         let name = param.slice(1).join(' ')
 
-        msg.guild.channels.find(c => c.name === 'open-requests').send(`Request: ${name}\nBy: ${msg.author}`)
-          .then(m => {
-            db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, m.id)
-            lock(msg, 1)
-            msg.channel.send('Request submitted.')
-          })
-          .catch(err => {
-            console.log(err)
-            msg.channel.send('Something went wrong.')
-          })
+        let filterUrls = param.filter(e => e.includes('vgmdb.net'))
+        if (filterUrls.length > 1) return msg.channel.send('You can only specify one url per request.')
+
+        if (filterUrls.length > 0) {
+          let url = filterUrls[0]
+          get(url.replace('vgmdb.net', 'vgmdb.info')).then(res => {
+            let { data } = res
+            submit(msg, db, `${data.name} (https://vgmdb.net/${data.link})`, { files: [data.picture_thumb] })
+          }).catch(err => catchErr(msg, err))
+        } else {
+          submit(msg, db, name)
+        }
       }
     },
 
@@ -97,6 +100,21 @@ module.exports = {
       }
     }
   }
+}
+
+function submit (msg, db, name, options = {}) {
+  msg.guild.channels.find(c => c.name === 'open-requests').send(`Request: ${name}\nBy: ${msg.author}`, options)
+    .then(m => {
+      db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, m.id)
+      lock(msg, 1)
+      msg.channel.send('Request submitted.')
+    })
+    .catch(err => catchErr(msg, err))
+}
+
+function catchErr (msg, err) {
+  console.log(err)
+  msg.channel.send('Something went wrong.')
 }
 
 function lock (msg, ammount) {

@@ -1,8 +1,10 @@
 {
   "name": "dsr_joker",
   "dependencies": {
-    "nodejs-traceroute": "github:jorgev259/nodejs-traceroute",
+    "axios": "^0.18.0",
+    "execa": "^1.0.0",
     "moment": "^2.24.0",
+    "nodejs-traceroute": "github:jorgev259/nodejs-traceroute",
     "speedtest-net": "^1.5.1"
   }
 }
