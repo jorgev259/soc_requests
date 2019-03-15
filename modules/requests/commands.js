@@ -6,9 +6,10 @@ let locked = false
 
 module.exports = {
   async reqs (client, db) {
-    db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, PRIMARY KEY (user))').run()
+    db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, donator TEXT, id INTEGER PRIMARY KEY AUTOINCREMENT)').run()
+    // CREATE TABLE "requests" ( `user` TEXT, `request` TEXT, `msg` TEXT, `id` INTEGER PRIMARY KEY AUTOINCREMENT )
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
-    requestCount = db.prepare('SELECT COUNT(*) as count FROM requests').get().count
+    requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ?').get('NO').count
     if (requestCount >= limit) locked = true
   },
   commands: {
@@ -44,7 +45,7 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        let req = db.prepare('SELECT request,msg,user FROM requests WHERE id=?').get(param[1])
+        let req = db.prepare('SELECT request,msg,user,donator FROM requests WHERE id=?').get(param[1])
 
         if (!req) return msg.channel.send(`Request not found.`)
 
@@ -52,7 +53,7 @@ module.exports = {
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'YES\',?,?,datetime(\'now\'))').run(req.user, req.request, param[3] || 'NONE', link)
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
-        lock(msg, -1)
+        lock(msg, req.donator === 'YES' ? 0 : -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
@@ -78,7 +79,7 @@ module.exports = {
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'NO\',?,?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
         db.prepare('DELETE FROM requests WHERE user=?').run(req.user)
-        lock(msg, -1)
+        lock(msg, req.donator === 'YES' ? 0 : -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
@@ -92,7 +93,7 @@ module.exports = {
 }
 
 function submit (msg, db, name, embed = {}) {
-  db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, 'PENDING')
+  db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, name, 'PENDING', msg.member.roles.some(r => r.name === 'Donators') ? 'YES' : 'NO')
   let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, name, 'PENDING')
 
   embed.fields = [
@@ -116,7 +117,7 @@ function submit (msg, db, name, embed = {}) {
       db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, id)
       msg.channel.send('Request submitted.')
 
-      lock(msg, 1)
+      lock(msg, msg.member.roles.some(r => r.name === 'Donators') ? 0 : 1)
     })
     .catch(err => catchErr(msg, err))
 }
