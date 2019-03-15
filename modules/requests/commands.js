@@ -59,6 +59,42 @@ module.exports = {
         })
       }
     },
+    refresh: {
+      desc: 'Marks a request as completed',
+      usage: '>complete [id] [link]',
+      async execute (client, msg, param, db) {
+        let stmt = db.prepare('SELECT * FROM requests')
+
+        for (const row of stmt.iterate()) {
+          msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(row.msg).then(m => {
+            let embed = {
+              fields: [
+                {
+                  'name': 'Request',
+                  'value': row.request
+                },
+                {
+                  'name': 'Requested by',
+                  'value': `<@${row.user}> / ${row.user}`,
+                  'inline': true
+                },
+                {
+                  'name': 'ID',
+                  'value': row.id,
+                  'inline': true
+                }
+              ]
+            }
+            if (m.attachments.length > 0) embed.image = { url: m.attachments.first().url }
+            m.delete()
+
+            msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(row.msg).then(m2 => {
+              db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m2.id, row.id)
+            })
+          })
+        }
+      }
+    },
     reject: {
       desc: 'Marks a request as rejected',
       usage: '>reject @user [reason]',
@@ -90,7 +126,6 @@ function submit (msg, db, name, embed = {}) {
   db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, 'PENDING')
   let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, name, 'PENDING')
 
-  embed.footer = { text: `ID: ${id}` }
   embed.fields = [
     {
       'name': 'Request',
