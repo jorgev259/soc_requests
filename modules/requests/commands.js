@@ -2,11 +2,14 @@ let requestCount = 0
 let limit = 20
 const { get } = require('axios')
 
+let locked = false
+
 module.exports = {
   async reqs (client, db) {
     db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, PRIMARY KEY (user))').run()
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
     requestCount = db.prepare('SELECT COUNT(*) as count FROM requests').get().count
+    if (requestCount >= limit) locked = true
   },
   commands: {
     request: {
@@ -126,51 +129,49 @@ function catchErr (msg, err) {
 function lock (msg, ammount) {
   let channel = msg.guild.channels.find(c => c.name === 'requests-submission')
   requestCount += ammount
-  let perms = []
-  let change = true
-  if (requestCount >= limit) {
+
+  if (requestCount >= limit && !locked) {
     channel.send('No more requests allowed')
-    perms = [
-      {
-        id: msg.guild.roles.find(r => r.name === 'BOTs').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.find(r => r.name === 'Donators').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.find(r => r.name === 'Technicans').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.find(r => r.name === 'Owner').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.find(r => r.name === 'Moderators').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.id,
-        deny: ['SEND_MESSAGES'],
-        allow: ['VIEW_CHANNEL']
-      }
-    ]
-  } else if (requestCount === limit - 1 && ammount === -1) {
-    channel.send('Requests open')
-    perms = [
-      {
-        id: msg.guild.id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      }
-    ]
-  } else change = false
-  if (change) {
-    console.log(perms)
     channel.overwritePermissions({
-      permissionOverwrites: perms,
-      reason: 'Submission locking/enabling'
-    })
+      permissionOverwrites: [
+        {
+          id: msg.guild.roles.find(r => r.name === 'BOTs').id,
+          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        },
+        {
+          id: msg.guild.roles.find(r => r.name === 'Donators').id,
+          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        },
+        {
+          id: msg.guild.roles.find(r => r.name === 'Technicans').id,
+          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        },
+        {
+          id: msg.guild.roles.find(r => r.name === 'Owner').id,
+          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        },
+        {
+          id: msg.guild.roles.find(r => r.name === 'Moderators').id,
+          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        },
+        {
+          id: msg.guild.id,
+          deny: ['SEND_MESSAGES'],
+          allow: ['VIEW_CHANNEL']
+        }
+      ],
+      reason: 'Submission locking'
+    }).then(() => { locked = true })
+  } else if (requestCount === limit - 1 && locked) {
+    channel.send('Requests open')
+    channel.overwritePermissions({
+      permissionOverwrites: [
+        {
+          id: msg.guild.id,
+          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        }
+      ],
+      reason: 'Submission enabling'
+    }).then(() => { locked = false })
   }
 }
