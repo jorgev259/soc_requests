@@ -66,6 +66,7 @@ module.exports = {
         let stmt = db.prepare('SELECT * FROM requests')
 
         for (const row of stmt.iterate()) {
+          console.log(row)
           msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(row.msg).then(m => {
             let embed = {
               fields: [
