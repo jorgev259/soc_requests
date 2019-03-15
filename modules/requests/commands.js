@@ -19,8 +19,8 @@ module.exports = {
         if (!param[1]) return msg.channel.send('Please provide a url or name')
 
         let req = db.prepare('SELECT request FROM requests WHERE user=?').get(msg.author.id)
-        if (!msg.member.roles.some(r => r.name === 'Donators') && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
-        if (!msg.member.roles.some(r => r.name === 'Donators') && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
+        if (!msg.member.roles.some(r => r.name === 'Donators' || r.name === 'Owner') && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
+        if (!msg.member.roles.some(r => r.name === 'Donators' || r.name === 'Owner') && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
         let name = param.slice(1).join(' ')
 
         let filterUrls = param.filter(e => e.includes('vgmdb.net'))
