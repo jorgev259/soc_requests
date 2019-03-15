@@ -136,8 +136,25 @@ function lock (msg, ammount) {
         allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
       },
       {
+        id: msg.guild.roles.find(r => r.name === 'Donators').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.roles.find(r => r.name === 'Technicans').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.roles.find(r => r.name === 'Owner').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.roles.find(r => r.name === 'Moderators').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
         id: msg.guild.id,
-        deny: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+        deny: ['SEND_MESSAGES'],
+        allow: ['VIEW_CHANNEL']
       }
     ]
   } else if (requestCount === limit - 1 && ammount === -1) {
