@@ -42,10 +42,10 @@ module.exports.events = {
         }
       ]
     }
-
+    console.log('here')
     guild.channels.find(c => c.name === 'requests-submission').overwritePermissions({
       permissionOverwrites: perms,
       reason: 'Submission locking/enabling Sync'
-    })
+    }).catch(err => console.log(err))
   }
 }
