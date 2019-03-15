@@ -27,7 +27,7 @@ module.exports = {
           let url = filterUrls[0]
           get(url.replace('vgmdb.net', 'vgmdb.info')).then(res => {
             let { data } = res
-            submit(msg, db, `${data.name} (https://vgmdb.net/${data.link})`, { files: [data.picture_small] })
+            submit(msg, db, `${data.name} (https://vgmdb.net/${data.link})`, { image: { url: data.picture_small } })
           }).catch(err => catchErr(msg, err))
         } else {
           submit(msg, db, name)
@@ -37,33 +37,25 @@ module.exports = {
 
     complete: {
       desc: 'Marks a request as completed',
-      usage: '>complete @user [link]',
+      usage: '>complete [id] [link]',
       async execute (client, msg, param, db) {
-        await msg.guild.members.fetch()
-
-        let user
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        if (msg.mentions.users.size > 0) user = msg.mentions.users.first()
-        else if (msg.guild.members.some(m => m.tag === param[1])) user = msg.guild.members.find(m => m.tag === param[1]).user
-        else if (msg.guild.members.has(param[1])) user = msg.guild.members.get(param[1])
-        else return msg.channel.send(`'${param[1]} is not a valid user.'`)
+        let req = db.prepare('SELECT request,msg,user FROM requests WHERE id=?').get(param[1])
 
-        let req = db.prepare('SELECT request,msg FROM requests WHERE user=?').get(user.id)
-
-        if (!req) return msg.channel.send(`This user doesnt have a request.`)
+        if (!req) return msg.channel.send(`Request not found.`)
 
         let link = param.slice(2).join(' ')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(user.id, req.request, link)
-        db.prepare('DELETE FROM requests WHERE user=?').run(user.id)
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, link)
+        db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
-          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: ${user}\nState: Completed by ${msg.author}\nLink: ${link}`)
+          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}\nLink: ${link}`)
 
-          msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`${user} ${link}`)
+          msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}> ${link}`)
         })
       }
     },
@@ -71,43 +63,56 @@ module.exports = {
       desc: 'Marks a request as rejected',
       usage: '>reject @user [reason]',
       async execute (client, msg, param, db) {
-        await msg.guild.members.fetch()
-
-        let user
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        if (msg.mentions.users.size > 0) user = msg.mentions.users.first()
-        else if (msg.guild.members.some(m => m.tag === param[1])) user = msg.guild.members.find(m => m.tag === param[1]).user
-        else if (msg.guild.members.has(param[1])) user = msg.guild.members.get(param[1])
-        else return msg.channel.send(`'${param[1]} is not a valid user.'`)
+        let req = db.prepare('SELECT request,msg,user FROM requests WHERE id=?').get(param[1])
 
-        let req = db.prepare('SELECT request,msg FROM requests WHERE user=?').get(user.id)
-
-        if (!req) return msg.channel.send(`This user doesnt have a request.`)
+        if (!req) return msg.channel.send(`Request not found.`)
 
         let reason = param.slice(2).join(' ')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(user.id, req.request, reason)
-        db.prepare('DELETE FROM requests WHERE user=?').run(user.id)
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
+        db.prepare('DELETE FROM requests WHERE user=?').run(req.user)
         lock(msg, -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
-          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: ${user}\nState: Rejected by ${msg.author}\nReason: ${reason}`)
+          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
 
-          msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from ${user} has been rejected.\nReason: ${reason}`)
+          msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
         })
       }
     }
   }
 }
 
-function submit (msg, db, name, options = {}) {
-  msg.guild.channels.find(c => c.name === 'open-requests').send(`Request: ${name}\nBy: ${msg.author}`, options)
+function submit (msg, db, name, embed = {}) {
+  db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, 'PENDING')
+  let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, name, 'PENDING')
+
+  embed.footer = { text: `ID: ${id}` }
+  embed.fields = [
+    {
+      'name': 'Request',
+      'value': name
+    },
+    {
+      'name': 'Requested by',
+      'value': `${msg.author.tag} / ${msg.author.id}`,
+      'inline': true
+    },
+    {
+      'name': 'ID',
+      'value': id,
+      'inline': true
+    }
+  ]
+  msg.guild.channels.find(c => c.name === 'open-requests').send({ embed: embed })
     .then(m => {
-      db.prepare('INSERT INTO requests (user,request,msg) VALUES (?,?,?)').run(msg.author.id, name, m.id)
-      lock(msg, 1)
+      db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, id)
       msg.channel.send('Request submitted.')
+
+      lock(msg, 1)
     })
     .catch(err => catchErr(msg, err))
 }
