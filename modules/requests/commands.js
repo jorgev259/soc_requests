@@ -88,7 +88,7 @@ module.exports = {
             if (m.attachments.length > 0) embed.image = { url: m.attachments.first().url }
             m.delete()
 
-            msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(row.msg).then(m2 => {
+            msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m2 => {
               db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m2.id, row.id)
             })
           })
