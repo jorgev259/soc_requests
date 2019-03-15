@@ -2,7 +2,7 @@ let limit = 20
 
 module.exports.events = {
   async ready (client, db) {
-    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests').get()
+    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests').get().count
     let guild = client.guilds.first()
     let perms = []
 
