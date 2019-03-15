@@ -59,53 +59,7 @@ module.exports = {
         })
       }
     },
-    refresh: {
-      desc: 'Marks a request as completed',
-      usage: '>complete [id] [link]',
-      async execute (client, msg, param, db) {
-        let stmt = db.prepare('SELECT * FROM requests')
 
-        for (const row of stmt.iterate()) {
-          console.log(row)
-          let embed = {
-            fields: [
-              {
-                'name': 'Request',
-                'value': row.request
-              },
-              {
-                'name': 'Requested by',
-                'value': `<@${row.user}> / ${row.user}`,
-                'inline': true
-              },
-              {
-                'name': 'ID',
-                'value': row.id,
-                'inline': true
-              }
-            ]
-          }
-
-          let filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
-
-          if (filterUrls.length > 0) {
-            let url = filterUrls[0]
-            get(url.replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')).then(res => {
-              let { data } = res
-              embed.image = { url: data.picture_small }
-
-              msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
-                db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
-              })
-            }).catch(err => catchErr(msg, err))
-          } else {
-            msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
-              db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
-            })
-          }
-        }
-      }
-    },
     reject: {
       desc: 'Marks a request as rejected',
       usage: '>reject @user [reason]',
