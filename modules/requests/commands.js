@@ -37,7 +37,7 @@ module.exports = {
 
     complete: {
       desc: 'Marks a request as completed',
-      usage: '>complete [id] [link]',
+      usage: '>complete [id] [link] [direct link]',
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
@@ -45,9 +45,9 @@ module.exports = {
 
         if (!req) return msg.channel.send(`Request not found.`)
 
-        let link = param.slice(2).join(' ')
+        let link = param[2]
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, link)
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'YES\',?,?,datetime(\'now\'))').run(req.user, req.request, param[3] || 'NONE', link)
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, -1)
 
@@ -56,13 +56,14 @@ module.exports = {
           msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}\nLink: ${link}`)
 
           msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}> ${link}`)
+          if (param[3]) msg.guild.channels.find(c => c.name === 'direct-links').send(`${req.request} ${param[3]}`)
         })
       }
     },
 
     reject: {
       desc: 'Marks a request as rejected',
-      usage: '>reject @user [reason]',
+      usage: '>reject [id] [reason]',
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
@@ -72,7 +73,7 @@ module.exports = {
 
         let reason = param.slice(2).join(' ')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'NO\',?,?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
         db.prepare('DELETE FROM requests WHERE user=?').run(req.user)
         lock(msg, -1)
 
