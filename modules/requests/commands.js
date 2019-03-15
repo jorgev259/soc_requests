@@ -128,7 +128,7 @@ function lock (msg, ammount) {
   requestCount += ammount
   let perms = []
   let change = true
-  if (requestCount >= limit && ammount === 1) {
+  if (requestCount >= limit) {
     channel.send('No more requests allowed')
     perms = [
       {
