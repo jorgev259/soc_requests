@@ -2,15 +2,9 @@ let limit = 20
 
 module.exports.events = {
   async ready (client, db) {
-    let stmt = db.prepare('SELECT user FROM requests GROUP BY user')
-
-    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests').get().count
+    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ?').get('NO').count
     let guild = client.guilds.first()
     let perms = []
-
-    for (const row of stmt.iterate()) {
-      guild.members.fetch(row.user).then(member => db.prepare('UPDATE requests SET donator=? WHERE user=?').run(member.roles.some(r => r.name === 'Donators') ? 'YES' : 'NO', row.user))
-    }
 
     if (requestCount >= limit) {
       perms = [
