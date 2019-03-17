@@ -16,9 +16,13 @@ module.exports = {
       desc: 'Reposts all open requests.',
       usage: '>refresh',
       async execute (client, msg, param, db) {
-        let stmt = db.prepare('SELECT * FROM requests ORDER BY id ASC')
+        let ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
+        runId(ids)
 
-        for (const row of stmt.iterate()) {
+        function runId (ids) {
+          if (!ids[0]) return
+          let row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
+
           let embed = {
             fields: [
               {
@@ -49,11 +53,15 @@ module.exports = {
 
               msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
                 db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
+                ids.shift()
+                runId(ids)
               })
             }).catch(err => catchErr(msg, err))
           } else {
             msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
               db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
+              ids.shift()
+              runId(ids)
             })
           }
         }
