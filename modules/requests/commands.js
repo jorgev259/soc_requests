@@ -7,7 +7,6 @@ let locked = false
 module.exports = {
   async reqs (client, db) {
     db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, donator TEXT, id INTEGER PRIMARY KEY AUTOINCREMENT)').run()
-    // CREATE TABLE "requests" ( `user` TEXT, `request` TEXT, `msg` TEXT, `id` INTEGER PRIMARY KEY AUTOINCREMENT )
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
     requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ?').get('NO').count
     if (requestCount >= limit) locked = true
@@ -17,7 +16,7 @@ module.exports = {
       desc: 'Reposts all open requests.',
       usage: '>refresh',
       async execute (client, msg, param, db) {
-        let stmt = db.prepare('SELECT * FROM requests')
+        let stmt = db.prepare('SELECT * FROM requests ORDER BY id ASC')
 
         for (const row of stmt.iterate()) {
           let embed = {
