@@ -23,47 +23,20 @@ module.exports = {
           if (!ids[0]) return
           let row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
 
-          let embed = {
-            fields: [
-              {
-                'name': 'Request',
-                'value': row.request
-              },
-              {
-                'name': 'Requested by',
-                'value': `<@${row.user}> / ${row.user}`,
-                'inline': true
-              },
-              {
-                'name': 'ID',
-                'value': row.id,
-                'inline': true
-              }
-            ],
-            color: row.donator === 'YES' ? 0xedcd40 : 0x42bfed
+          let info = {
+            request: row.request,
+            user: row.user,
+            id: row.id,
+            donator: row.donator === 'YES'
           }
-
           let filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
 
-          if (filterUrls.length > 0) {
-            let url = filterUrls[0]
-            get(url.replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')).then(res => {
-              let { data } = res
-              embed.image = { url: data.picture_small }
-
-              msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
-                db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
-                ids.shift()
-                runId(ids)
-              })
-            }).catch(err => catchErr(msg, err))
-          } else {
-            msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
-              db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
+          if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')
+          sendEmbed(msg, db, info)
+            .then(() => {
               ids.shift()
               runId(ids)
             })
-          }
         }
       }
     },
@@ -71,26 +44,26 @@ module.exports = {
     request: {
       desc: 'Request a soundtrack',
       usage: '>request [url or name]',
-      execute (client, msg, param, db) {
+      async execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Please provide a url or name')
 
         let req = db.prepare('SELECT request FROM requests WHERE user=?').get(msg.author.id)
-        if (!msg.member.roles.some(r => r.name === 'Donators' || r.name === 'Owner') && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
-        if (!msg.member.roles.some(r => r.name === 'Donators' || r.name === 'Owner') && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
+        let donator = msg.member.roles.some(r => r.name === 'Donators')
+        let owner = msg.member.roles.some(r => r.name === 'Owner')
+        if (!(donator || owner) && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
+        if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
         let name = param.slice(1).join(' ')
 
         let filterUrls = param.filter(e => e.includes('vgmdb.net'))
         if (filterUrls.length > 1) return msg.channel.send('You can only specify one url per request.')
 
-        if (filterUrls.length > 0) {
-          let url = filterUrls[0]
-          get(url.replace('vgmdb.net', 'vgmdb.info')).then(res => {
-            let { data } = res
-            submit(msg, db, `${data.name} (https://vgmdb.net/${data.link})`, { image: { url: data.picture_small } })
-          }).catch(err => catchErr(msg, err))
-        } else {
-          submit(msg, db, name)
+        let info = {
+          request: name,
+          user: msg.author.id,
+          donator: donator
         }
+        if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
+        submit(msg, db, info)
       }
     },
 
@@ -147,34 +120,60 @@ module.exports = {
   }
 }
 
-function submit (msg, db, name, embed = {}) {
-  db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, name, 'PENDING', msg.member.roles.some(r => r.name === 'Donators') ? 'YES' : 'NO')
-  let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, name, 'PENDING')
-  embed.color = msg.member.roles.some(r => r.name === 'Donators') ? 0xedcd40 : 0x42bfed
-  embed.fields = [
-    {
-      'name': 'Request',
-      'value': name
-    },
-    {
-      'name': 'Requested by',
-      'value': `${msg.author.tag} / ${msg.author.id}`,
-      'inline': true
-    },
-    {
-      'name': 'ID',
-      'value': id,
-      'inline': true
-    }
-  ]
-  msg.guild.channels.find(c => c.name === 'open-requests').send({ embed: embed })
-    .then(m => {
-      db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, id)
+function submit (msg, db, info) {
+  let donator = msg.member.roles.some(r => r.name === 'Donators')
+  db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
+  let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
+
+  info.id = id
+  sendEmbed(msg, db, info)
+    .then(() => {
       msg.channel.send('Request submitted.')
 
-      lock(msg, msg.member.roles.some(r => r.name === 'Donators') ? 0 : 1)
+      lock(msg, donator ? 0 : 1)
     })
     .catch(err => catchErr(msg, err))
+}
+
+function sendEmbed (msg, db, info) {
+  return new Promise(async (resolve, reject) => {
+    let embed = {
+      fields: [
+        {
+          'name': 'Request',
+          'value': info.request
+        },
+        {
+          'name': 'Requested by',
+          'value': `<@${info.user}> / ${info.user}`,
+          'inline': true
+        },
+        {
+          'name': 'ID',
+          'value': info.id,
+          'inline': true
+        }
+      ],
+      color: info.donator ? 0xedcd40 : 0x42bfed
+    }
+    console.log(info.vgmdb)
+    try {
+      if (info.vgmdb) {
+        let { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
+
+        embed.image = { url: data.picture_small }
+        let newRequest = `${data.name} (https://vgmdb.net/${data.link})`
+        embed.fields[0].value = newRequest
+        db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
+      }
+    } finally {
+      msg.guild.channels.find(c => c.name === 'open-requests').send({ embed })
+        .then(m => {
+          db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, info.id)
+          resolve()
+        })
+    }
+  })
 }
 
 function catchErr (msg, err) {
