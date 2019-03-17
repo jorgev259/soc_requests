@@ -13,6 +13,54 @@ module.exports = {
     if (requestCount >= limit) locked = true
   },
   commands: {
+    refresh: {
+      desc: 'Reposts all open requests.',
+      usage: '>refresh',
+      async execute (client, msg, param, db) {
+        let stmt = db.prepare('SELECT * FROM requests')
+
+        for (const row of stmt.iterate()) {
+          let embed = {
+            fields: [
+              {
+                'name': 'Request',
+                'value': row.request
+              },
+              {
+                'name': 'Requested by',
+                'value': `<@${row.user}> / ${row.user}`,
+                'inline': true
+              },
+              {
+                'name': 'ID',
+                'value': row.id,
+                'inline': true
+              }
+            ],
+            color: row.donator === 'YES' ? 0xedcd40 : 0x42bfed
+          }
+
+          let filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
+
+          if (filterUrls.length > 0) {
+            let url = filterUrls[0]
+            get(url.replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')).then(res => {
+              let { data } = res
+              embed.image = { url: data.picture_small }
+
+              msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
+                db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
+              })
+            }).catch(err => catchErr(msg, err))
+          } else {
+            msg.guild.channels.find(c => c.name === 'open-requests').send({ embed }).then(m => {
+              db.prepare('UPDATE requests SET msg=? WHERE id=?').run(m.id, row.id)
+            })
+          }
+        }
+      }
+    },
+
     request: {
       desc: 'Request a soundtrack',
       usage: '>request [url or name]',
@@ -95,7 +143,7 @@ module.exports = {
 function submit (msg, db, name, embed = {}) {
   db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, name, 'PENDING', msg.member.roles.some(r => r.name === 'Donators') ? 'YES' : 'NO')
   let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, name, 'PENDING')
-
+  embed.color = msg.member.roles.some(r => r.name === 'Donators') ? 0xedcd40 : 0x42bfed
   embed.fields = [
     {
       'name': 'Request',
