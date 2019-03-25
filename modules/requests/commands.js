@@ -71,6 +71,7 @@ module.exports = {
       desc: 'Marks a request as completed',
       usage: '>complete [id] [link] [direct link]',
       async execute (client, msg, param, db) {
+        console.log(param)
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
         let req = db.prepare('SELECT request,msg,user,donator FROM requests WHERE id=?').get(param[1])
