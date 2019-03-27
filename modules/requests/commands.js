@@ -100,7 +100,7 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        let req = db.prepare('SELECT request,msg,user FROM requests WHERE id=?').get(param[1])
+        let req = db.prepare('SELECT request,msg,user,donator FROM requests WHERE id=?').get(param[1])
 
         if (!req) return msg.channel.send(`Request not found.`)
 
