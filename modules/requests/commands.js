@@ -67,6 +67,14 @@ module.exports = {
       }
     },
 
+    pending: {
+      desc: 'Shows how many pending requests you have.',
+      async execute (client, msg, param, db) {
+        let { count } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=?').get(msg.author.id)
+        msg.channel.send(`Pending requests: ${count}`)
+      }
+    },
+
     complete: {
       desc: 'Marks a request as completed',
       usage: '>complete [id] [link] [direct link]',
