@@ -71,7 +71,7 @@ module.exports = {
       desc: 'Shows how many pending requests you have.',
       async execute (client, msg, param, db) {
         let id = 0
-        if (msg.mentions.users.size > 0 && msg.guild.roles.some(r => r.name === 'Moderators')) return msg.channel.send('Forbidden')
+        if (msg.mentions.users.size > 0 && !msg.member.roles.some(r => r.name === 'Moderators')) return msg.channel.send('Forbidden')
         else if (msg.mentions.users.size > 0) id = msg.mentions.users.first().id
         else id = msg.author.id
 
