@@ -120,7 +120,7 @@ module.exports = {
         let reason = param.slice(2).join(' ')
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'NO\',?,?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
-        db.prepare('DELETE FROM requests WHERE user=?').run(req.user)
+        db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, req.donator === 'YES' ? 0 : -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
