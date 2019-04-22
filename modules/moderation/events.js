@@ -38,13 +38,15 @@ function send (client, db) {
   let today = moment().utc()
   guild.members.fetch().then(members => {
     members.forEach(member => {
+      console.log(member.id)
+      console.log(db.prepare('SELECT lastMessage FROM lastMessage WHERE user=?').get(member.id))
       let diff = moment().utc().diff(db.prepare('SELECT lastMessage FROM lastMessage WHERE user=?').get(member.id).lastMessage)
-      console.log(`${member.user.tag}: ${diff / 1000 / 60 / 60 / 24} days inactive`)
+      /* console.log(`${member.user.tag}: ${diff / 1000 / 60 / 60 / 24} days inactive`)
       if (diff >= 60 * 24 * 60 * 60 * 1000) {
         member.send('Youve been kicked from sittingonclouds.net for being inactive.').finally(() => {
           member.kick('Inactivity')
         })
-      }
+      } */
     })
   })
 
