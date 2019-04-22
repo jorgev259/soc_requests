@@ -25,7 +25,7 @@ module.exports.events = {
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: guild.roles.find(r => r.name === 'Moderators').id,
+          id: guild.roles.find(r => r.name === 'Mods/News').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
