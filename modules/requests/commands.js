@@ -71,7 +71,7 @@ module.exports = {
       desc: 'Shows how many pending requests you have.',
       async execute (client, msg, param, db) {
         let id = 0
-        if (msg.mentions.users.size > 0 && !msg.member.roles.some(r => r.name === 'Moderators')) return msg.channel.send('Forbidden')
+        if (msg.mentions.users.size > 0 && !msg.member.roles.some(r => r.name === 'Mods/News')) return msg.channel.send('Forbidden')
         else if (msg.mentions.users.size > 0) id = msg.mentions.users.first().id
         else id = msg.author.id
 
@@ -220,7 +220,7 @@ function lock (msg, ammount) {
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: msg.guild.roles.find(r => r.name === 'Moderators').id,
+          id: msg.guild.roles.find(r => r.name === 'Mods/News').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
