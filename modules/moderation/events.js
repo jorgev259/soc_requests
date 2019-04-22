@@ -29,6 +29,9 @@ module.exports = {
     },
     async message (client, db, moduleName, msg) {
       db.prepare('UPDATE lastMessage set lastMessage = ? WHERE user =?').run(moment().utc().format(), msg.author.id)
+    },
+    async guildMemberAdd (client, db, moduleName, member) {
+      db.prepare('INSERT OR IGNORE INTO lastMessage (user, lastMessage) VALUES (?, ?)').run(member.id, moment().utc().format())
     }
   }
 }
@@ -38,15 +41,13 @@ function send (client, db) {
   let today = moment().utc()
   guild.members.fetch().then(members => {
     members.forEach(member => {
-      console.log(member.id)
-      console.log(db.prepare('SELECT lastMessage FROM lastMessage WHERE user=?').get(member.id))
       let diff = moment().utc().diff(db.prepare('SELECT lastMessage FROM lastMessage WHERE user=?').get(member.id).lastMessage)
-      /* console.log(`${member.user.tag}: ${diff / 1000 / 60 / 60 / 24} days inactive`)
       if (diff >= 60 * 24 * 60 * 60 * 1000) {
+        console.log(`${member.user.tag}: ${diff / 1000 / 60 / 60 / 24} days inactive`)
         member.send('Youve been kicked from sittingonclouds.net for being inactive.').finally(() => {
           member.kick('Inactivity')
         })
-      } */
+      }
     })
   })
 
