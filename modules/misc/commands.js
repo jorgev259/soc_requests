@@ -7,7 +7,7 @@ module.exports = {
   commands: {
     whois: {
       desc: 'Shows user\'s info',
-      usage: '>whois [@user]',
+      usage: 'whois [@user]',
       async execute (client, msg, param, db) {
         let user
         if (msg.mentions.members.size > 0) user = msg.mentions.members.first()
@@ -120,7 +120,7 @@ module.exports = {
     },
     topactivity: {
       desc: 'Lists the most active users.',
-      usage: '>topactivity [number]',
+      usage: 'topactivity [number]',
       async execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Must specify the ammount of users wanted.')
         if (Number.isNaN(param[1])) return msg.channel.send('Invalid Number')

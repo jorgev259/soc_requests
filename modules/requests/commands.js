@@ -14,7 +14,7 @@ module.exports = {
   commands: {
     refresh: {
       desc: 'Reposts all open requests.',
-      usage: '>refresh',
+      usage: 'refresh',
       async execute (client, msg, param, db) {
         let ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
         runId(ids)
@@ -43,7 +43,7 @@ module.exports = {
 
     request: {
       desc: 'Request a soundtrack',
-      usage: '>request [url or name]',
+      usage: 'request [url or name]',
       async execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Please provide a url or name')
 
@@ -82,7 +82,7 @@ module.exports = {
 
     complete: {
       desc: 'Marks a request as completed',
-      usage: '>complete [id] [link] [direct link]',
+      usage: 'complete [id] [link] [direct link]',
       async execute (client, msg, param, db) {
         console.log(param)
         if (!param[2]) return msg.channel.send('Incomplete command.')
@@ -109,7 +109,7 @@ module.exports = {
 
     reject: {
       desc: 'Marks a request as rejected',
-      usage: '>reject [id] [reason]',
+      usage: 'reject [id] [reason]',
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 

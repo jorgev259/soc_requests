@@ -4,7 +4,7 @@ module.exports = {
   commands: {
     trace: {
       desc: 'Perform a traceroute',
-      usage: '>trace [url or ip]',
+      usage: 'trace [url or ip]',
       async execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Please provide a url or ip')
 

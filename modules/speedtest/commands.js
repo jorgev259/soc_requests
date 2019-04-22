@@ -2,7 +2,7 @@ var speedTest = require('speedtest-net')
 module.exports.commands = {
   'speedtest': {
     desc: 'Performs a speedtest.',
-    usage: '>speedtest [server]',
+    usage: 'speedtest [server]',
     execute (client, msg, param, db) {
       let options = { log: false }
       if (param[1]) options.serverId = param[1]
