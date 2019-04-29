@@ -43,7 +43,7 @@ module.exports = {
     },
 
     hold: {
-      desc: 'Marks a request as ON HOLD',
+      desc: 'Marks a request as ON HOLD.',
       usage: 'hold [id] [reason]',
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
