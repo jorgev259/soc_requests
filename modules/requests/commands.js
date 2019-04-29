@@ -220,10 +220,6 @@ function lock (msg, ammount) {
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: msg.guild.roles.find(r => r.name === 'Mods/News').id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        },
-        {
           id: msg.guild.id,
           deny: ['SEND_MESSAGES'],
           allow: ['VIEW_CHANNEL']
