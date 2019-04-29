@@ -48,7 +48,7 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        let req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
+        let req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
         if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
 
         if (!req) return msg.channel.send(`Request not found.`)
@@ -58,7 +58,8 @@ module.exports = {
           request: req.request,
           user: req.user,
           donator: req.donator,
-          hold: true
+          hold: true,
+          id: req.id
         }
 
         db.prepare('UPDATE requests SET hold = ? WHERE id=?').run('YES', info.id)
