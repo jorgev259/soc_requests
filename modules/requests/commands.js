@@ -28,6 +28,7 @@ module.exports = {
             request: row.request,
             user: row.user,
             id: row.id,
+            hold: row.hold === 'YES',
             donator: row.donator === 'YES'
           }
           let filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
@@ -59,19 +60,17 @@ module.exports = {
           user: req.user,
           donator: req.donator,
           hold: true,
-          id: req.id
+          id: req.id,
+          msg: req.msg
         }
 
         db.prepare('UPDATE requests SET hold = ? WHERE id=?').run('YES', info.id)
 
-        sendEmbed(msg, db, info)
+        editEmbed(msg, db, info)
           .then(() => {
-            msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
-              await m.delete()
-              msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
+            msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
 
-              msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
-            })
+            msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
 
             lock(msg, -1)
           })
@@ -225,6 +224,48 @@ function sendEmbed (msg, db, info) {
           db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, info.id)
           resolve()
         })
+    }
+  })
+}
+
+function editEmbed (msg, db, info) {
+  return new Promise(async (resolve, reject) => {
+    let embed = {
+      fields: [
+        {
+          'name': 'Request',
+          'value': `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
+        },
+        {
+          'name': 'Requested by',
+          'value': `<@${info.user}> / ${info.user}`,
+          'inline': true
+        },
+        {
+          'name': 'ID',
+          'value': info.id,
+          'inline': true
+        }
+      ],
+      color: info.donator ? 0xedcd40 : 0x42bfed
+    }
+
+    try {
+      if (info.vgmdb) {
+        let { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
+
+        embed.image = { url: data.picture_small }
+        let newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
+        embed.fields[0].value = newRequest
+        db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
+      }
+    } finally {
+      msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(info.msg).then(m => {
+        m.edit({ embed })
+          .then(m => {
+            resolve()
+          })
+      })
     }
   })
 }
