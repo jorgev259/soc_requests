@@ -1,8 +1,8 @@
-let limit = 20
+let limit = 25
 
 module.exports.events = {
   async ready (client, db) {
-    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ?').get('NO').count
+    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     let guild = client.guilds.first()
     let perms = []
 
@@ -22,10 +22,6 @@ module.exports.events = {
         },
         {
           id: guild.roles.find(r => r.name === 'Owner').id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        },
-        {
-          id: guild.roles.find(r => r.name === 'Mods/News').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
