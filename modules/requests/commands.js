@@ -1,5 +1,5 @@
 let requestCount = 0
-let limit = 25
+let limit = 20
 const { get } = require('axios')
 
 let locked = false

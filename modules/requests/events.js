@@ -1,4 +1,4 @@
-let limit = 25
+let limit = 20
 
 module.exports.events = {
   async ready (client, db) {
