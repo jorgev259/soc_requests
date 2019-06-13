@@ -113,9 +113,9 @@ module.exports = {
         else id = msg.author.id
 
         let { count } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=? AND hold=?').get(id, 'NO')
-        let { countHold } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=? AND hold=?').get(id, 'YES')
-        msg.channel.send(`${id === msg.author.id ? 'Pending' : `${msg.mentions.users.first().tag}'s`} pending requests: ${count}\n
-                          ${id === msg.author.id ? 'On Hold' : `${msg.mentions.users.first().tag}'s`} on hold requests: ${countHold}`)
+        let { countHold } = db.prepare('SELECT COUNT(*) as countHold FROM requests WHERE user=? AND hold=?').get(id, 'YES')
+        msg.channel.send(`${id === msg.author.id ? 'Pending' : `${msg.mentions.users.first().tag}'s pending`} requests: ${count}\n` +
+                         `${id === msg.author.id ? 'On Hold' : `${msg.mentions.users.first().tag}'s on hold`} requests: ${countHold}`)
       }
     },
 
