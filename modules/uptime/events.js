@@ -1,6 +1,6 @@
 let { get } = require('axios')
 let status
-module.exprot = {
+module.exports = {
   async ready (client, db) {
     get('https://www.sittingonclouds.net/').then(res => {
       status = res.status
