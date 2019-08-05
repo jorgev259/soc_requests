@@ -4,7 +4,7 @@ module.exports.events = {
   async ready (client, db) {
     get('https://www.sittingonclouds.net/').then(res => {
       status = res.status
-      setTimeout(() => {
+      setInterval(() => {
         get('https://www.sittingonclouds.net/').then(res => {
           console.log(res.status)
           if (res.status !== status) {
