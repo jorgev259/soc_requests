@@ -4,10 +4,10 @@ let status
 module.exports.events = {
   async ready (client, db) {
     get('https://www.sittingonclouds.net/').then(res => {
-      status = res.status
+      status = res.status === 200
       start(client)
     }).catch(err => {
-      status = err.response.status
+      status = err.response.status === 200
       start(client)
     })
   }
@@ -15,9 +15,9 @@ module.exports.events = {
 
 function start (client) {
   get('https://www.sittingonclouds.net/').then(res => {
-    handle(client, res.status)
+    handle(client, res.status === 200)
   }).catch(err => {
-    handle(client, err.response.status)
+    handle(client, err.response.status === 200)
   })
 }
 
@@ -25,7 +25,7 @@ async function handle (client, statusInc) {
   if (statusInc !== status) {
     status = statusInc
     await client.guilds.first().channels.find(c => c.name === 'server-downtime').send(
-      status === 200
+      status
         ? `**:white_check_mark: sittingonclouds.net Server is Up: It should work fine again! - Reason: Server is Reachable**`
         : `**:no_entry: sittingonclouds.net Server is Down: Its Probally a Maintainance or its really Down. - Reason: Connection Timeout - Time: ${moment().utc().format('YYYY/MM/DD hh:mm:ss A')} UTC**`
     )
