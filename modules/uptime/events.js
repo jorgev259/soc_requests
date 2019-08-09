@@ -26,7 +26,7 @@ async function handle (client, statusInc) {
     status = statusInc
     await client.guilds.first().channels.find(c => c.name === 'server-downtime').send(
       status
-        ? `**:white_check_mark: sittingonclouds.net Server is Up: It should work fine again! - Reason: Server is Reachable**`
+        ? `**:white_check_mark: sittingonclouds.net Server is Up: It should work fine again! - Reason: Server is Reachable - Time: ${moment().utc().format('YYYY/MM/DD hh:mm:ss A')} UTC**`
         : `**:no_entry: sittingonclouds.net Server is Down: Its Probally a Maintainance or its really Down. - Reason: Connection Timeout - Time: ${moment().utc().format('YYYY/MM/DD hh:mm:ss A')} UTC**`
     )
   }
