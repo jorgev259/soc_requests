@@ -1,9 +1,10 @@
-let limit = 20
+const limit = 20
+const telegram = require('telegram.js')
 
 module.exports.events = {
   async ready (client, db) {
-    let requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
-    let guild = client.guilds.first()
+    const requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
+    const guild = client.guilds.first()
     let perms = []
 
     if (requestCount >= limit) {
@@ -43,5 +44,7 @@ module.exports.events = {
       permissionOverwrites: perms,
       reason: 'Submission locking/enabling Sync'
     }).catch(err => console.log(err))
+
+    telegram.login(client)
   }
 }

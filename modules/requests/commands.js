@@ -1,9 +1,7 @@
 let requestCount = 0
 const limit = 20
 const { get } = require('axios')
-const Telegraf = require('telegraf')
 
-const telegram = null
 let locked = false
 
 module.exports = {
@@ -13,9 +11,6 @@ module.exports = {
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
     requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     if (requestCount >= limit) locked = true
-    console.log(client.data.tokens.telegram)
-    telegram = new Telegraf(client.data.tokens.telegram)
-    telegram.command('enable', (ctx) => ctx.reply('Hello'))
   },
   commands: {
     test: {
