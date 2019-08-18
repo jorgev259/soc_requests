@@ -1,5 +1,5 @@
 const limit = 20
-const telegram = require('telegram.js')
+const telegram = require('./telegram.js')
 
 module.exports.events = {
   async ready (client, db) {
