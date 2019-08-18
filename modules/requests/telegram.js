@@ -1,11 +1,11 @@
 const Telegraf = require('telegraf')
 
-let telegram = null
+let bot = null
 
 module.exports = {
   login (client, db) {
-    telegram = new Telegraf(client.data.tokens.telegram)
-    telegram.command('enable', (ctx) => {
+    bot = new Telegraf(client.data.tokens.telegram)
+    bot.command('enable', (ctx) => {
       const req = db.prepare('SELECT id FROM telegram_chats WHERE id=?').get(ctx.chat.id)
       if (req) return ctx.reply('Already enabled!')
       else {
@@ -13,10 +13,10 @@ module.exports = {
         ctx.reply('Woomy! This chat will receive all updates from sittingonclouds.net')
       }
     })
-    telegram.launch()
+    bot.launch()
   },
   sendUpdate (link, db) {
     const ids = db.prepare('SELECT id FROM telegram_chats').all()
-    ids.forEach(row => telegram.sendMessage(link, row.id))
+    ids.forEach(row => bot.telegram.sendMessage(link, row.id))
   }
 }
