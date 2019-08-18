@@ -1,23 +1,26 @@
 let requestCount = 0
 const limit = 20
 const { get } = require('axios')
+const telegram = require('./telegram.js')
 
 let locked = false
 
 module.exports = {
   async reqs (client, db) {
     db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, donator TEXT, hold INTEGER DEFAULT \'NO\', id INTEGER PRIMARY KEY AUTOINCREMENT)').run()
-
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
+    db.prepare('CREATE TABLE IF NOT EXISTS telegram_chats (id TEXT PRIMARY KEY)').run()
     requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     if (requestCount >= limit) locked = true
   },
   commands: {
-    test: {
-      desc: 'Reposts all open requests.',
-      usage: 'refresh',
+    announce: {
+      desc: 'Announces the upload of a soundtrack',
+      usage: 'announce [link]',
       async execute (client, msg, param, db) {
-
+        if (!param[1]) return msg.channel.send('Incomplete command')
+        msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(param[1])
+        telegram.sendUpdate(param[1], db)
       }
     },
     refresh: {
@@ -150,6 +153,7 @@ module.exports = {
           msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}> ${link}`)
           if (param[3]) msg.guild.channels.find(c => c.name === 'direct-links').send(`${req.request} ${param[3]}`)
         })
+        telegram.sendUpdate(link, db)
       }
     },
 
