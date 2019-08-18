@@ -1,5 +1,5 @@
 let requestCount = 0
-let limit = 20
+const limit = 20
 const { get } = require('axios')
 
 let locked = false
@@ -17,21 +17,22 @@ module.exports = {
       desc: 'Reposts all open requests.',
       usage: 'refresh',
       async execute (client, msg, param, db) {
-        let ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
+        const ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
         runId(ids)
 
         function runId (ids) {
           if (!ids[0]) return
-          let row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
+          const row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
 
-          let info = {
+          const info = {
             request: row.request,
             user: row.user,
             id: row.id,
             hold: row.hold === 'YES',
-            donator: row.donator === 'YES'
+            donator: row.donator === 'YES',
+            oldMessage: row.msg
           }
-          let filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
+          const filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
 
           if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')
           sendEmbed(msg, db, info)
@@ -49,13 +50,13 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        let req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
+        const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
         if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
 
         if (!req) return msg.channel.send(`Request not found.`)
-        let reason = param.slice(2).join(' ')
+        const reason = param.slice(2).join(' ')
 
-        let info = {
+        const info = {
           request: req.request,
           user: req.user,
           donator: req.donator,
@@ -84,17 +85,17 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[1]) return msg.channel.send('Please provide a url or name')
 
-        let req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
-        let donator = msg.member.roles.some(r => r.name === 'Donators')
-        let owner = msg.member.roles.some(r => r.name === 'Owner')
+        const req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
+        const donator = msg.member.roles.some(r => r.name === 'Donators')
+        const owner = msg.member.roles.some(r => r.name === 'Owner')
         if (!(donator || owner) && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
         if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
-        let name = param.slice(1).join(' ')
+        const name = param.slice(1).join(' ')
 
-        let filterUrls = param.filter(e => e.includes('vgmdb.net'))
+        const filterUrls = param.filter(e => e.includes('vgmdb.net'))
         if (filterUrls.length > 1) return msg.channel.send('You can only specify one url per request.')
 
-        let info = {
+        const info = {
           request: name,
           user: msg.author.id,
           donator: donator
@@ -112,8 +113,8 @@ module.exports = {
         else if (msg.mentions.users.size > 0) id = msg.mentions.users.first().id
         else id = msg.author.id
 
-        let { count } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=? AND hold=?').get(id, 'NO')
-        let { countHold } = db.prepare('SELECT COUNT(*) as countHold FROM requests WHERE user=? AND hold=?').get(id, 'YES')
+        const { count } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=? AND hold=?').get(id, 'NO')
+        const { countHold } = db.prepare('SELECT COUNT(*) as countHold FROM requests WHERE user=? AND hold=?').get(id, 'YES')
         msg.channel.send(`${id === msg.author.id ? 'Pending' : `${msg.mentions.users.first().tag}'s pending`} requests: ${count}\n` +
                          `${id === msg.author.id ? 'On Hold' : `${msg.mentions.users.first().tag}'s on hold`} requests: ${countHold}`)
       }
@@ -125,11 +126,11 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        let req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
+        const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
         if (!req) return msg.channel.send(`Request not found.`)
 
-        let link = param[2]
+        const link = param[2]
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'YES\',?,?,datetime(\'now\'))').run(req.user, req.request, param[3] || 'NONE', link)
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
@@ -151,11 +152,11 @@ module.exports = {
       async execute (client, msg, param, db) {
         if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        let req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
+        const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
         if (!req) return msg.channel.send(`Request not found.`)
 
-        let reason = param.slice(2).join(' ')
+        const reason = param.slice(2).join(' ')
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'NO\',?,?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
@@ -173,9 +174,9 @@ module.exports = {
 }
 
 function submit (msg, db, info) {
-  let donator = msg.member.roles.some(r => r.name === 'Donators')
+  const donator = msg.member.roles.some(r => r.name === 'Donators')
   db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
-  let { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
+  const { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
 
   info.id = id
   sendEmbed(msg, db, info)
@@ -189,21 +190,30 @@ function submit (msg, db, info) {
 
 function sendEmbed (msg, db, info) {
   return new Promise(async (resolve, reject) => {
-    let embed = {
+    if (info.oldMessage) {
+      try {
+        const oldMessage = await msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(info.oldMessage)
+        oldMessage.delete()
+        console.log('Message deleted')
+      } catch (err) {
+        console.log('Couldnt delete message')
+      }
+    }
+    const embed = {
       fields: [
         {
-          'name': 'Request',
-          'value': `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
+          name: 'Request',
+          value: `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
         },
         {
-          'name': 'Requested by',
-          'value': `<@${info.user}> / ${info.user}`,
-          'inline': true
+          name: 'Requested by',
+          value: `<@${info.user}> / ${info.user}`,
+          inline: true
         },
         {
-          'name': 'ID',
-          'value': info.id,
-          'inline': true
+          name: 'ID',
+          value: info.id,
+          inline: true
         }
       ],
       color: info.donator ? 0xedcd40 : 0x42bfed
@@ -211,10 +221,10 @@ function sendEmbed (msg, db, info) {
 
     try {
       if (info.vgmdb) {
-        let { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
+        const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
 
         embed.image = { url: data.picture_small }
-        let newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
+        const newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
         embed.fields[0].value = newRequest
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
@@ -230,21 +240,21 @@ function sendEmbed (msg, db, info) {
 
 function editEmbed (msg, db, info) {
   return new Promise(async (resolve, reject) => {
-    let embed = {
+    const embed = {
       fields: [
         {
-          'name': 'Request',
-          'value': `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
+          name: 'Request',
+          value: `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
         },
         {
-          'name': 'Requested by',
-          'value': `<@${info.user}> / ${info.user}`,
-          'inline': true
+          name: 'Requested by',
+          value: `<@${info.user}> / ${info.user}`,
+          inline: true
         },
         {
-          'name': 'ID',
-          'value': info.id,
-          'inline': true
+          name: 'ID',
+          value: info.id,
+          inline: true
         }
       ],
       color: info.donator ? 0xedcd40 : 0x42bfed
@@ -252,10 +262,10 @@ function editEmbed (msg, db, info) {
 
     try {
       if (info.vgmdb) {
-        let { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
+        const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
 
         embed.image = { url: data.picture_small }
-        let newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
+        const newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
         embed.fields[0].value = newRequest
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
@@ -276,7 +286,7 @@ function catchErr (msg, err) {
 }
 
 function lock (msg, ammount) {
-  let channel = msg.guild.channels.find(c => c.name === 'requests-submission')
+  const channel = msg.guild.channels.find(c => c.name === 'requests-submission')
   requestCount += ammount
 
   if (requestCount >= limit && !locked) {
