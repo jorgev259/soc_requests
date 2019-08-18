@@ -17,6 +17,6 @@ module.exports = {
   },
   sendUpdate (link, db) {
     const ids = db.prepare('SELECT id FROM telegram_chats').all()
-    ids.forEach(row => bot.telegram.sendMessage(link, row.id))
+    ids.forEach(row => bot.telegram.sendMessage(row.id, link))
   }
 }
