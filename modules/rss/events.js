@@ -13,6 +13,7 @@ module.exports = {
     async ready (client, db) {
       urls.forEach(async url => {
         const data = db.prepare('SELECT id FROM rss WHERE url=?').get(url)
+        console.log(data)
         if (data) cache[url] = data.id
         else {
           const feed = await parser.parseURL(url)
@@ -31,7 +32,6 @@ module.exports = {
             db.prepare('UPDATE rss SET id = ?, url = ? WHERE id = ?').run(outItems[0].id, url, cache[url])
             cache[url] = outItems[0].id
           }
-          console.log(outItems)
 
           end()
         }, 1000)
