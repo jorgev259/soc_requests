@@ -17,14 +17,11 @@ module.exports = (client, db) => {
   Bitly.setAccessToken(client.data.tokens.bitly)
   app.post('/soc/post', async (req, res) => {
     res.send({})
-    console.log(req.body)
     Bitly.shorten({ longUrl: req.body.post.guid }, function (err, results) {
       if (err) throw new Error(err)
-      console.log(results)
-      /*
-        client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(results)
-        telegram.sendUpdate(results,db)
-      */
+      const url = results.data.url
+      client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
+      telegram.sendUpdate(url, db)
     })
   })
   http.listen(app.get('port'), function () {
