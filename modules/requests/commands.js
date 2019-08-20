@@ -140,7 +140,7 @@ module.exports = {
           msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
           const dm = await msg.guild.members.fetch(req.user)
           dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
-            msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
+            msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
           })
         })
       }
