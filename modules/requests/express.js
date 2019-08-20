@@ -10,6 +10,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.set('port', process.env.PORT || 3005)
 app.post('/soc/post', (req, res) => {
   console.log(req.body)
+  res.send({})
 })
 module.exports = () => {
   http.listen(app.get('port'), function () {
