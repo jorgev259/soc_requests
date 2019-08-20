@@ -8,7 +8,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 app.set('port', process.env.PORT || 3005)
-app.post('/post', (req, res) => {
+app.post('/soc/post', (req, res) => {
   console.log(req.body)
 })
 module.exports = () => {
