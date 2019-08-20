@@ -19,10 +19,10 @@ module.exports = (client, db) => {
     res.send({})
     Bitly.shorten({ longUrl: req.body.post.guid }, function (err, results) {
       if (err) throw new Error(err)
-      console.log(results)
-      console.log(results['data'])
-      console.log(results.data)
-      const url = results.data.url
+      console.log(typeof results)
+      const data = JSON.parse(results)
+      console.log(data)
+      const url = data.data.url
       client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
       telegram.sendUpdate(url, db)
     })
