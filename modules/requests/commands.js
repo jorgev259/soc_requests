@@ -1,7 +1,6 @@
 let requestCount = 0
 const limit = 20
 const { get } = require('axios')
-const telegram = require('./telegram.js')
 
 let locked = false
 
@@ -14,15 +13,6 @@ module.exports = {
     if (requestCount >= limit) locked = true
   },
   commands: {
-    announce: {
-      desc: 'Announces the upload of a soundtrack',
-      usage: 'announce [link]',
-      async execute (client, msg, param, db) {
-        if (!param[1]) return msg.channel.send('Incomplete command')
-        msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(param[1])
-        telegram.sendUpdate(param[1], db)
-      }
-    },
     refresh: {
       desc: 'Reposts all open requests.',
       usage: 'refresh',
@@ -132,28 +122,27 @@ module.exports = {
 
     complete: {
       desc: 'Marks a request as completed.',
-      usage: 'complete [id] [link] [direct link]',
+      usage: 'complete [id]',
       async execute (client, msg, param, db) {
-        if (!param[2]) return msg.channel.send('Incomplete command.')
+        if (!param[1]) return msg.channel.send('Incomplete command.')
 
         const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
         if (!req) return msg.channel.send(`Request not found.`)
 
-        const link = param[2]
-
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'YES\',?,?,datetime(\'now\'))').run(req.user, req.request, param[3] || 'NONE', link)
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, param[2] || 'NONE')
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
-          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}\nLink: ${link}`)
-
-          msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}> ${link}`)
-          if (param[3]) msg.guild.channels.find(c => c.name === 'direct-links').send(`${req.request} ${param[3]}`)
+          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}`)
+          msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
+          const dm = await msg.guild.members.fetch(req.user)
+          dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
+            msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
+          })
         })
-        telegram.sendUpdate(link, db)
       }
     },
 
@@ -169,7 +158,7 @@ module.exports = {
 
         const reason = param.slice(2).join(' ')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,direct,timestamp) VALUES (?,?,\'NO\',?,?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
