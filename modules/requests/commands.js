@@ -158,7 +158,7 @@ module.exports = {
 
         const reason = param.slice(2).join(' ')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason, 'NONE')
+        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
