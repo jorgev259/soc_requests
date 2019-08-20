@@ -2,7 +2,6 @@ let requestCount = 0
 const limit = 20
 const { get } = require('axios')
 const telegram = require('./telegram.js')
-require('./express.js')()
 
 let locked = false
 
