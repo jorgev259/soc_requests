@@ -30,8 +30,8 @@ module.exports = {
           if (outItems.length > 0) {
             db.prepare('UPDATE rss SET id = ?, url = ? WHERE id = ?').run(outItems[0].id, url, cache[url])
             cache[url] = outItems[0].id
+            outItems.forEach(item => client.guilds.first().channels.find(c => c.name === 'provider-downtime').send(`${item.title}\n${item.url}\n${item.pubDate}`))
           }
-          console.log(outItems)
 
           end()
         }, 1000)
