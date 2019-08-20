@@ -46,6 +46,6 @@ module.exports.events = {
     }).catch(err => console.log(err))
 
     telegram.login(client, db)
-    require('./express.js')(client)
+    require('./express.js')(client, db)
   }
 }
