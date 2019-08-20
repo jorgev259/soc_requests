@@ -25,6 +25,7 @@ module.exports = {
           const outItems = []
           var run = true
           for (var i = 0; i < feed.items.length && run; i++) {
+              console.log(feed.items[i] !== cache[url])
             if (feed.items[i] !== cache[url]) outItems.push(feed.items[i])
             else run = false
           }
