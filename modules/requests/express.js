@@ -17,7 +17,8 @@ module.exports = (client, db) => {
   Bitly.setAccessToken(client.data.tokens.bitly)
   app.post('/soc/post', async (req, res) => {
     res.send({})
-    Bitly.shorten({ longUrl: req.body.post.guid }, function (err, results) {
+    console.log(req.body)
+    Bitly.shorten({ longUrl: req.body.url }, function (err, results) {
       if (err) throw new Error(err)
       const data = JSON.parse(results)
       const url = data.data.url
