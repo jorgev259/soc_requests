@@ -2,7 +2,7 @@ let { generate } = require('captcha-generator')
 
 module.exports = {
   reqs (client, db) {
-    db.prepare('CREATE TABLE IF NOT EXISTS captcha (id TEXT, guild TEXT, captcha TEXT, PRIMARY KEY(id,guild))')
+    db.prepare('CREATE TABLE IF NOT EXISTS captcha (id TEXT, guild TEXT, captcha TEXT, PRIMARY KEY(id,guild))').run()
   },
   events: {
     message (client, db, msg) {
