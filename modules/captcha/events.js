@@ -28,8 +28,8 @@ module.exports = {
       const cimg = generate()
       const { plaintext, buffer } = cimg
       console.log(plaintext)
-      console.log(member.id)
-      console.log(member.guild)
+      console.log(member)
+
       db.prepare('INSERT INTO captcha (id,guild,captcha) VALUES (?,?,?)').run(member.id, member.guild.id, plaintext)
 
       member.send({
