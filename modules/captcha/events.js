@@ -24,7 +24,7 @@ module.exports = {
         }
       }
     },
-    guildMemberAdd (client, db, member) {
+    guildMemberAdd (client, db, moduleName, member) {
       const cimg = generate()
       const { plaintext, buffer } = cimg
       console.log(plaintext)
