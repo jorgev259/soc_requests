@@ -22,8 +22,12 @@ module.exports = (client, db) => {
       if (err) throw new Error(err)
       const data = JSON.parse(results)
       const url = data.data.url
-      client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
-      telegram.sendUpdate(url, db)
+      let row = db.prepare('SELECT * FROM bitly WHERE url = ?').get(url)
+      if(!row){
+        client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
+        telegram.sendUpdate(url, db)
+        db.prepare('INSERT INTO bitly (url) VALUES (?)').run(url)
+      }
     })
   })
   http.listen(app.get('port'), function () {
