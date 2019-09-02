@@ -27,22 +27,23 @@ module.exports = {
     guildMemberAdd (client, db, moduleName, member) {
       const cimg = generate()
       const { plaintext, buffer } = cimg
-      console.log(plaintext)
-      console.log(member)
 
-      db.prepare('INSERT INTO captcha (id,guild,captcha) VALUES (?,?,?)').run(member.id, member.guild.id, plaintext)
+      let rows = db.prepare('SELECT guild,captcha FROM captcha WHERE id = ? AND guild = ?').get(member.id, member.guild.id)
+      if (!rows) {
+        db.prepare('INSERT INTO captcha (id,guild,captcha) VALUES (?,?,?)').run(member.id, member.guild.id, plaintext)
 
-      member.send({
-        embed: {
-          title: `Welcome to ${member.guild.name}!`,
-          description: 'Please complete the captcha below to gain access to the server.\n**NOTE:** This is **Case Sensitive**.',
-          fields: [{
-            name: '**Why?**',
-            value: 'This is to protect the server against malicious raids using automated bots.'
-          }]
-        },
-        files: [buffer]
-      })
+        member.send({
+          embed: {
+            title: `Welcome to ${member.guild.name}!`,
+            description: 'Please complete the captcha below to gain access to the server.\n**NOTE:** This is **Case Sensitive**.',
+            fields: [{
+              name: '**Why?**',
+              value: 'This is to protect the server against malicious raids using automated bots.'
+            }]
+          },
+          files: [buffer]
+        })
+      }
     }
   }
 }
