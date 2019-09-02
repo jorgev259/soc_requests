@@ -1,4 +1,4 @@
-import { generate } from 'captcha-generator'
+let { generate } = require('captcha-generator')
 
 module.exports = {
   reqs (client, db) {
