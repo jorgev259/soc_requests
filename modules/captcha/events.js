@@ -5,7 +5,7 @@ module.exports = {
     db.prepare('CREATE TABLE IF NOT EXISTS captcha (id TEXT, guild TEXT, captcha TEXT, PRIMARY KEY(id,guild))').run()
   },
   events: {
-    message (client, db, msg) {
+    message (client, db, moduleName, msg) {
       if (!msg.guild) {
         let rows = db.prepare('SELECT guild,captcha FROM captcha WHERE id = ?').all(msg.author.id)
         if (rows.length > 0) {
