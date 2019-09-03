@@ -10,7 +10,7 @@ module.exports = {
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
     db.prepare('CREATE TABLE IF NOT EXISTS telegram_chats (id TEXT PRIMARY KEY)').run()
     db.prepare('CREATE TABLE IF NOT EXISTS bitly (url TEXT PRIMARY KEY)').run()
-    db.prepare('CREATE TABLE IF NOT EXISTS vgmdb_url (url TEXT, request TEXT)')
+    db.prepare('CREATE TABLE IF NOT EXISTS vgmdb_url (url TEXT, request TEXT)').run()
     requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     if (requestCount >= limit) locked = true
   },
