@@ -47,15 +47,5 @@ module.exports.events = {
 
     telegram.login(client, db)
     require('./express.js')(client, db)
-
-    db.prepare('SELECT request,id as count FROM requests').all().forEach(row => {
-      const getUrls = require('get-urls')
-      let urls = getUrls(row.request)
-      urls.forEach(url => {
-        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(url.replace(')', ''), row.id)
-      })
-    })
-
-    console.log('done')
   }
 }
