@@ -11,6 +11,7 @@ module.exports = {
       rows.forEach(row => {
         let guild = client.guilds.get(row.guild)
         guild.members.fetch(row.id).then(member => {
+          console.log(member)
           cache[`${member.guild.id}_${member.id}`] = setTimeout(member.kick, (30 * 60 * 1000) - (Date.now() - row.joinStamp))
         })
       })
