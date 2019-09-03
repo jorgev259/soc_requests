@@ -25,7 +25,7 @@ module.exports = {
               let role = guild.roles.find(r => r.name === 'Members')
               guild.members.fetch(msg.author.id).then(member => {
                 clearTimeout(cache[`${guild.id}_${msg.author.id}`])
-                db.prepare('DELETE FROM captcha WHERE id = ? AND guild = ?').all(msg.author.id, row.guild)
+                db.prepare('DELETE FROM captcha WHERE id = ? AND guild = ?').run(msg.author.id, row.guild)
                 member.roles.add(role)
               })
             } else {
