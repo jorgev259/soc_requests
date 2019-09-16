@@ -9,6 +9,8 @@ module.exports = {
     db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, donator TEXT, hold INTEGER DEFAULT \'NO\', id INTEGER PRIMARY KEY AUTOINCREMENT)').run()
     db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
     db.prepare('CREATE TABLE IF NOT EXISTS telegram_chats (id TEXT PRIMARY KEY)').run()
+    db.prepare('CREATE TABLE IF NOT EXISTS bitly (url TEXT PRIMARY KEY)').run()
+    db.prepare('CREATE TABLE IF NOT EXISTS vgmdb_url (url TEXT, request TEXT)').run()
     requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     if (requestCount >= limit) locked = true
   },
@@ -100,7 +102,11 @@ module.exports = {
           user: msg.author.id,
           donator: donator
         }
-        if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
+        if (filterUrls.length > 0) {
+          let row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
+          if (row.length > 0) return msg.channel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
+          info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
+        }
         submit(msg, db, info)
       }
     },
@@ -160,6 +166,7 @@ module.exports = {
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
+        db.prepare('DELETE FROM vgmdb_url WHERE request=?').run(param[1])
         lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
         msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
@@ -226,6 +233,7 @@ function sendEmbed (msg, db, info) {
         embed.image = { url: data.picture_small }
         const newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
         embed.fields[0].value = newRequest
+        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(`https://vgmdb.net/${data.link}`, info.id)
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
     } finally {
