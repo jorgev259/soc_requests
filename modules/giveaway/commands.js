@@ -22,8 +22,7 @@ module.exports = {
             if (check) return msg.channel.send('Theres already a giveaway running on this channel')
 
             db.prepare('INSERT INTO giveaway (guild,channel,code,answer) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, answer)
-            timers[msg.guild.id] = {}
-            timers[msg.guild.id][msg.channel.id] = {}
+            checkData(msg.guild.id, msg.channel.id)
             msg.channel.send(`Giveaway started! Use the command 'guess' to guess the missing number of the code.`)
           })
       }
@@ -38,7 +37,7 @@ module.exports = {
         const guess = parseInt(param[1])
         if (isNaN(guess) || guess > 9 || guess < 0) return msg.channel.send('Invalid guess. Must be a number between 0 and 9.')
         const { code, answer } = giveaway
-
+        checkData(msg.guild.id, msg.channel.id)
         if (timers[msg.guild.id][msg.channel.id][msg.author.id]) return msg.channel.send(`Please wait ${moment().unix() + 10 - timers[msg.guild.id][msg.channel.id][msg.author.id]} before doing another guess.`)
         if (answer === guess) {
           db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND answer = ?').run(msg.guild.id, msg.channel.id, code, guess)
@@ -54,4 +53,9 @@ module.exports = {
       }
     }
   }
+}
+
+function checkData (guild, channel) {
+  if (!timers[guild]) timers[guild] = {}
+  if (!timers[guild][channel]) timers[guild][channel] = {}
 }
