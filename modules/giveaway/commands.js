@@ -1,6 +1,6 @@
 module.exports = {
   reqs (client, db) {
-    db.prepare('CREATE TABLE IF NOT EXISTS giveaway (guild TEXT, channel TEXT, code TEXT, hint INTEGER)').run()
+    db.prepare('CREATE TABLE IF NOT EXISTS giveaway (guild TEXT, channel TEXT, code TEXT, answer INTEGER)').run()
   },
   commands: {
     giveaway: {
@@ -14,17 +14,13 @@ module.exports = {
         dm.channel.awaitMessages(m => true, { max: 1 })
           .then(collected => {
             const code = collected.first().content
-            var match = code.match(/\d+/)
-            console.log(code)
-            console.log(match)
-            const hint = code
-            hint[match] = '?'
+            var answer = code.match(/\d+/)
 
             check = db.prepare('SELECT * FROM giveaway WHERE guild = ? AND channel = ?').get(msg.guild.id, msg.channel.id)
             if (check) return msg.channel.send('Theres already a giveaway running on this channel')
 
-            db.prepare('INSERT INTO giveaway (guild,channel,code,hint) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, match)
-            msg.channel.send(`Giveaway started! Use the command 'guess' to try the missing number of this code.\n${hint}`)
+            db.prepare('INSERT INTO giveaway (guild,channel,code,answer) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, answer)
+            msg.channel.send(`Giveaway started! Use the command 'guess' to try the missing number of this code.\n${answer.replace(answer, '?')}`)
           })
       }
     },
@@ -36,13 +32,13 @@ module.exports = {
         if (!giveaway) return msg.channel.send('Theres no giveaway running on this channel')
 
         const guess = parseInt(param[1])
-        const { code, hint } = giveaway
+        const { code, answer } = giveaway
         console.log(guess)
         console.log(code)
-        console.log(hint)
-        console.log(code.charAt(hint))
-        if (parseInt(code.charAt(hint)) === guess) {
-          db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND hint = ?').run(msg.guild.id, msg.channel.id, code, guess)
+        console.log(answer)
+
+        if (answer === guess) {
+          db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND answer = ?').run(msg.guild.id, msg.channel.id, code, guess)
           msg.channel.send(`Congratulations ${msg.author}! Your code was sent throught DMs.`)
           msg.author.send(code)
         } else msg.channel.send('Try again.')
