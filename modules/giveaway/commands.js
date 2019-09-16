@@ -39,14 +39,17 @@ module.exports = {
         if (isNaN(guess) || guess > 9 || guess < 0) return msg.channel.send('Invalid guess. Must be a number between 0 and 9.')
         const { code, answer } = giveaway
 
-        if (timers[msg.guild.id][msg.channel.id][msg.author.id]) return msg.channel.send('Stop right there')
+        if (timers[msg.guild.id][msg.channel.id][msg.author.id]) return msg.channel.send(`Please wait ${moment().unix() + 10 - timers[msg.guild.id][msg.channel.id][msg.author.id]} before doing another guess.`)
         if (answer === guess) {
           db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND answer = ?').run(msg.guild.id, msg.channel.id, code, guess)
           msg.channel.send(`Congratulations ${msg.author}! Your code was sent throught DMs.`)
           msg.author.send(code)
         } else {
           msg.channel.send('Try again.')
-          timers[msg.guild.id][msg.channel.id][msg.author.id] = true
+          timers[msg.guild.id][msg.channel.id][msg.author.id] = moment().unix()
+          setTimeout(function (guild, channel, author) {
+            delete timers[guild][channel][author]
+          }, 10 * 1000, msg.guild.id, msg.channel.id, msg.author.id)
         }
       }
     }
