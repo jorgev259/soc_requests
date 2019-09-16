@@ -1,4 +1,9 @@
 var moment = require('moment')
+const images = [
+  'https://cdn.discordapp.com/attachments/564823843709911051/623043312152084480/1563335238685.png',
+  'https://cdn.discordapp.com/attachments/564823843709911051/623043272973090819/Nowingifform_759d646a2f9dbcb1affe9dba51dba7ea.png',
+  'https://cdn.discordapp.com/attachments/564823843709911051/623043263712198656/d12.png'
+]
 const timers = {}
 module.exports = {
   reqs (client, db) {
@@ -38,7 +43,7 @@ module.exports = {
         if (isNaN(guess) || guess > 9 || guess < 0) return msg.channel.send('Invalid guess. Must be a number between 0 and 9.')
         const { code, answer } = giveaway
         checkData(msg.guild.id, msg.channel.id)
-        if (timers[msg.guild.id][msg.channel.id][msg.author.id]) return msg.channel.send(`Please wait ${timers[msg.guild.id][msg.channel.id][msg.author.id] + 10 - moment().unix()} seconds before doing another guess.`)
+        if (timers[msg.guild.id][msg.channel.id][msg.author.id]) return msg.channel.send(`Please wait ${timers[msg.guild.id][msg.channel.id][msg.author.id] + 10 - moment().unix()} seconds before doing another guess.`, { files: [images[Math.random() * images.length >> 0]] })
         if (answer === guess) {
           db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND answer = ?').run(msg.guild.id, msg.channel.id, code, guess)
           msg.channel.send(`Congratulations ${msg.author}! Your code was sent throught DMs.`)
