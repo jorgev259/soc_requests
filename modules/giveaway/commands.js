@@ -15,6 +15,8 @@ module.exports = {
           .then(collected => {
             const code = collected.first().content
             var match = code.match(/\d+/)
+            console.log(code)
+            console.log(match)
             const hint = code
             hint[match] = '?'
 
@@ -35,7 +37,7 @@ module.exports = {
 
         const guess = parseInt(param[1])
         const { code, hint } = giveaway
-        if (code[hint] === guess) {
+        if (code.charAt(hint) === guess) {
           db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND hint = ?').run(msg.guild.id, msg.channel.id, code, guess)
           msg.channel.send(`Congratulations ${msg.author}! Your code was sent throught DMs.`)
           msg.author.send(code)
