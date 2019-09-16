@@ -20,7 +20,7 @@ module.exports = {
             if (check) return msg.channel.send('Theres already a giveaway running on this channel')
 
             db.prepare('INSERT INTO giveaway (guild,channel,code,answer) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, answer)
-            msg.channel.send(`Giveaway started! Use the command 'guess' to try the missing number of this code.\n${answer.replace(answer, '?')}`)
+            msg.channel.send(`Giveaway started! Use the command 'guess' to try the missing number of this code.\n${code.replace(answer, '?')}`)
           })
       }
     },
