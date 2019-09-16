@@ -1,3 +1,5 @@
+var moment = require('moment')
+const timers = {}
 module.exports = {
   reqs (client, db) {
     db.prepare('CREATE TABLE IF NOT EXISTS giveaway (guild TEXT, channel TEXT, code TEXT, answer INTEGER)').run()
@@ -20,6 +22,8 @@ module.exports = {
             if (check) return msg.channel.send('Theres already a giveaway running on this channel')
 
             db.prepare('INSERT INTO giveaway (guild,channel,code,answer) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, answer)
+            timers[msg.guild.id] = {}
+            timers[msg.guild.id][msg.channel.id] = {}
             msg.channel.send(`Giveaway started! Use the command 'guess' to guess the missing number of the code.`)
           })
       }
@@ -35,11 +39,15 @@ module.exports = {
         if (isNaN(guess) || guess > 9 || guess < 0) return msg.channel.send('Invalid guess. Must be a number between 0 and 9.')
         const { code, answer } = giveaway
 
+        if (timers[msg.guild.id][msg.channel.id][msg.author.id]) return msg.channel.send('Stop right there')
         if (answer === guess) {
           db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND answer = ?').run(msg.guild.id, msg.channel.id, code, guess)
           msg.channel.send(`Congratulations ${msg.author}! Your code was sent throught DMs.`)
           msg.author.send(code)
-        } else msg.channel.send('Try again.')
+        } else {
+          msg.channel.send('Try again.')
+          timers[msg.guild.id][msg.channel.id][msg.author.id] = true
+        }
       }
     }
   }
