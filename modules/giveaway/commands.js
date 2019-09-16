@@ -14,13 +14,13 @@ module.exports = {
         dm.channel.awaitMessages(m => true, { max: 1 })
           .then(collected => {
             const code = collected.first().content
-            var answer = code.match(/\d+/)
+            var answer = code.match(/\d+/)[0][0]
 
             check = db.prepare('SELECT * FROM giveaway WHERE guild = ? AND channel = ?').get(msg.guild.id, msg.channel.id)
             if (check) return msg.channel.send('Theres already a giveaway running on this channel')
 
             db.prepare('INSERT INTO giveaway (guild,channel,code,answer) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, answer)
-            msg.channel.send(`Giveaway started! Use the command 'guess' to try the missing number of this code.\n${code.replace(answer, '?')}`)
+            msg.channel.send(`Giveaway started! Use the command 'guess' to guess the missing number of the code.`)
           })
       }
     },
@@ -32,10 +32,8 @@ module.exports = {
         if (!giveaway) return msg.channel.send('Theres no giveaway running on this channel')
 
         const guess = parseInt(param[1])
+        if (isNaN(guess) || guess > 9 || guess < 0) return msg.channel.send('Invalid guess. Must be a number between 0 and 9.')
         const { code, answer } = giveaway
-        console.log(guess)
-        console.log(code)
-        console.log(answer)
 
         if (answer === guess) {
           db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND answer = ?').run(msg.guild.id, msg.channel.id, code, guess)
