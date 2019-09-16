@@ -21,7 +21,7 @@ module.exports = {
             check = db.prepare('SELECT * FROM giveaway WHERE guild = ? AND channel = ?').get(msg.guild.id, msg.channel.id)
             if (check) return msg.channel.send('Theres already a giveaway running on this channel')
 
-            db.prepare('INSERT INTO giveaways (guild,channel,code,hint) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, match)
+            db.prepare('INSERT INTO giveaway (guild,channel,code,hint) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, match)
             msg.channel.send(`Giveaway started! Use the command 'guess' to try the missing number of this code.\n${hint}`)
           })
       }
@@ -36,7 +36,7 @@ module.exports = {
         const guess = parseInt(param[1])
         const { code, hint } = giveaway
         if (code[hint] === guess) {
-          db.prepare('DELETE FROM giveaways WHERE guild = ? AND channel = ? AND code = ? AND hint = ?').run(msg.guild.id, msg.channel.id, code, guess)
+          db.prepare('DELETE FROM giveaway WHERE guild = ? AND channel = ? AND code = ? AND hint = ?').run(msg.guild.id, msg.channel.id, code, guess)
           msg.channel.send(`Congratulations ${msg.author}! Your code was sent throught DMs.`)
           msg.author.send(code)
         } else msg.channel.send('Try again.')
