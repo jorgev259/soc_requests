@@ -8,7 +8,7 @@ module.exports = {
     async ready (client, db) {
       const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
       const messages = await channel.messages.fetch()
-      await messages.remove()
+      await Promise.all(messages.map(m => m.delete))
 
       let message
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
