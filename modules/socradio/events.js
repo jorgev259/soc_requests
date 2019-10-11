@@ -6,6 +6,11 @@ const axios = require('axios')
 module.exports = {
   events: {
     async ready (client, db) {
+      const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
+      const messages = await channel.messages.fetch()
+      await messages.remove()
+
+      let message
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
@@ -38,6 +43,34 @@ module.exports = {
             }
           })
           console.log(data)
+          if (message) message.delete()
+          message = await channel.send({
+            embeds: [{
+              color: 1719241,
+              thumbnail: {
+                url: `https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`
+              },
+              title: 'Now Playing',
+              url: 'https://play.sittingonclouds.net/clouds',
+              fields: [
+                {
+                  name: 'Album',
+                  value: data[0].album,
+                  inline: true
+                },
+                {
+                  name: 'Artist',
+                  value: data[0].artist,
+                  inline: true
+                },
+                {
+                  name: 'Track',
+                  value: data[0].title,
+                  inline: true
+                }
+              ]
+            }]
+          })
         })
 
         res.pipe(devnull())
