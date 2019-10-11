@@ -1,10 +1,8 @@
 var icy = require('icy')
 var devnull = require('dev-null')
-const Entities = require('html-entities').AllHtmlEntities
 const Qs = require('qs')
 const axios = require('axios')
 
-const entities = new Entities()
 module.exports = {
   events: {
     async ready (client, db) {
@@ -14,12 +12,12 @@ module.exports = {
           const parsed = icy.parse(metadata)
           const fullTitle = parsed.StreamTitle.split('-')
           const artistComposer = fullTitle.shift().split('/')
-          const title = entities.decode(fullTitle.join('-'))
-          const artist = entities.decode(artistComposer[0])
+          const title = decodeURI(fullTitle.join('-'))
+          const artist = decodeURI(artistComposer[0])
           let composer
 
           if (artistComposer.length > 1) {
-            composer = entities.decode(artistComposer[1]).trim()
+            composer = decodeURI(artistComposer[1]).trim()
           }
 
           console.log({
