@@ -1,0 +1,12 @@
+{
+    "mysql": {
+        "connectionLimit" : 1000,
+        "connectTimeout" : 3600000,
+        "acquireTimeout"  : 3600000,
+        "timeout"       : 3600000,
+        "host": "hackme",
+        "user": "hackme",
+        "password": "hackme",
+        "database": "hackme"
+      }
+}
