@@ -31,7 +31,7 @@ module.exports = {
             composer: composer
           })
 
-          const { data } = await axios.get('https://api.sittingonclouds.net/song', {
+          let { data } = await axios.get('https://api.sittingonclouds.net/song', {
             params: {
               title: title.trim(),
               artist: artist.trim(),
@@ -43,8 +43,8 @@ module.exports = {
             }
           })
           console.log(data)
-          if (message) message.delete()
-          message = await channel.send({
+          if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
+          const newMessage = await channel.send({
             embed: {
               color: 1719241,
               thumbnail: {
@@ -71,6 +71,8 @@ module.exports = {
               ]
             }
           })
+          if (message) message.delete()
+          message = newMessage
         })
 
         res.pipe(devnull())
