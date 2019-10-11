@@ -10,9 +10,21 @@ module.exports = {
         // log any "metadata" events that happen
         res.on('metadata', function (metadata) {
           const parsed = icy.parse(metadata)
-          const title = entities.decode(parsed.StreamTitle)
+          const fullTitle = entities.decode(parsed.StreamTitle).split('-')
+          const artistComposer = fullTitle.shift().split('/')
+          const title = fullTitle.join('-')
+          const artist = artistComposer[0]
+          let composer
 
-          console.log(title)
+          if (artistComposer.length > 1) {
+            composer = artistComposer[1]
+          }
+
+          console.log({
+            title: title,
+            artist: artist,
+            composer: composer
+          })
         })
 
         res.pipe(devnull())
