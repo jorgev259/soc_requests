@@ -23,9 +23,9 @@ module.exports = {
           }
 
           console.log({
-            title: title,
-            artist: artist,
-            composer: composer
+            title: title.trim(),
+            artist: artist.trim(),
+            composer: composer.trim()
           })
 
           const { data } = await axios.get('https://api.sittingonclouds.net/song', {
