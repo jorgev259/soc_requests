@@ -1,6 +1,8 @@
 var icy = require('icy')
 var devnull = require('dev-null')
 const Entities = require('html-entities').AllHtmlEntities
+const Qs = require('qs')
+const axios = require('axios')
 
 const entities = new Entities()
 module.exports = {
@@ -25,10 +27,19 @@ module.exports = {
             artist: artist,
             composer: composer
           })
-          let query
-          // if (composer) query = await pool.query('SELECT title,artist,album.name as album FROM song, album WHERE song.album = album.name AND title = ? AND artist = ? AND composer = ? LIMIT 1', [title, artist, composer])
-          // else query = await pool.query('SELECT title,artist,album.name as album FROM song, album.name WHERE song.album = album.name AND title = ? AND artist = ? LIMIT 1', [title, artist])
-          console.log(query)
+
+          const { data } = await axios.get('https://api.sittingonclouds.net/song', {
+            params: {
+              title: title,
+              artist: artist,
+              composer: composer
+            },
+
+            paramsSerializer: function (params) {
+              return Qs.stringify(params, { arrayFormat: 'repeat' })
+            }
+          })
+          console.log(data)
         })
 
         res.pipe(devnull())
