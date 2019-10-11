@@ -19,13 +19,13 @@ module.exports = {
           let composer
 
           if (artistComposer.length > 1) {
-            composer = entities.decode(artistComposer[1])
+            composer = entities.decode(artistComposer[1]).trim()
           }
 
           console.log({
             title: title.trim(),
             artist: artist.trim(),
-            composer: composer.trim()
+            composer: composer
           })
 
           const { data } = await axios.get('https://api.sittingonclouds.net/song', {
