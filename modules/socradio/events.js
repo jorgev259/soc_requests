@@ -28,8 +28,8 @@ module.exports = {
 
           const { data } = await axios.get('https://api.sittingonclouds.net/song', {
             params: {
-              title: title,
-              artist: artist,
+              title: title.trim(),
+              artist: artist.trim(),
               composer: composer
             },
 
