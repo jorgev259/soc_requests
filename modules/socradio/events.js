@@ -45,7 +45,7 @@ module.exports = {
           console.log(data)
           if (message) message.delete()
           message = await channel.send({
-            embeds: [{
+            embed: {
               color: 1719241,
               thumbnail: {
                 url: `https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`
@@ -69,7 +69,7 @@ module.exports = {
                   inline: true
                 }
               ]
-            }]
+            }
           })
         })
 
