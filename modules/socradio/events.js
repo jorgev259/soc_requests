@@ -48,7 +48,7 @@ module.exports = {
             embed: {
               color: 1719241,
               thumbnail: {
-                url: `https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`
+                url: encodeURI(`https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`)
               },
               title: 'Now Playing',
               url: 'https://play.sittingonclouds.net/clouds',
