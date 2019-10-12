@@ -16,7 +16,7 @@ module.exports = {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
           const parsed = icy.parse(metadata)
-          const fullTitle = he.unescape(parsed.StreamTitle.split('-'))
+          const fullTitle = he.unescape(parsed.StreamTitle).split('-')
           console.log(fullTitle)
           const artistComposer = fullTitle.shift().split('/')
           const title = fullTitle.join('-')
