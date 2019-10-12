@@ -14,7 +14,8 @@ module.exports = {
 
       let message
       radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
-      radioChannel.leave()
+      await radioChannel.leave()
+
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
@@ -108,15 +109,16 @@ module.exports = {
       })
     },
     async voiceStateUpdate (client, db) {
+      const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
       if (running) {
-        if (radioChannel.members.size === 1) {
+        if (members.size === 0) {
           await radioChannel.leave()
           running = false
         }
       } else {
-        if (radioChannel.members.size > 0) {
+        if (members.size > 0) {
           const connection = await radioChannel.join()
-          connection.play('https://play.sittingonclouds.net/clouds')
+          connection.play('https://play.sittingonclouds.net/clouds', { bitrate: 'auto' })
           running = true
         }
       }
