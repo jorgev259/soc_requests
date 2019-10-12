@@ -22,26 +22,18 @@ module.exports = {
           const parsed = icy.parse(metadata)
           const fullTitle = he.unescape(parsed.StreamTitle).split('-')
           console.log(fullTitle)
-          const artistComposer = fullTitle.shift().split('/')
+          const artist = fullTitle.shift()
           const title = fullTitle.join('-')
-          const artist = artistComposer[0]
-          let composer
-
-          if (artistComposer.length > 1) {
-            composer = artistComposer[1].trim()
-          }
 
           console.log({
             title: title.trim(),
-            artist: artist.trim(),
-            composer: composer
+            artist: artist.trim()
           })
 
           let { data } = await axios.get('https://api.sittingonclouds.net/song', {
             params: {
               title: title.trim(),
-              artist: artist.trim(),
-              composer: composer
+              artist: artist.trim()
             },
 
             paramsSerializer: function (params) {
