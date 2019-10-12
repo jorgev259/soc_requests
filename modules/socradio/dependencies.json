@@ -1,6 +1,8 @@
 {
     "icy":"^2.1.0",
-    "html-entities":"^1.2.1",
     "qs":"^6.8.0",
-    "axios":"^0.19.0"
+    "axios":"^0.19.0",
+    "ffmpeg-binaries":"3.2.2-3",
+    "node-opus":"^0.3.2",
+    "dev-null":"^0.1.1"
 }
