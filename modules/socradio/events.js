@@ -3,7 +3,8 @@ var devnull = require('dev-null')
 const Qs = require('qs')
 var he = require('he')
 const axios = require('axios')
-
+const running = false
+let radioChannel
 module.exports = {
   events: {
     async ready (client, db) {
@@ -12,6 +13,7 @@ module.exports = {
       await Promise.all(messages.map(m => m.delete))
 
       let message
+      radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
@@ -103,6 +105,17 @@ module.exports = {
 
         res.pipe(devnull())
       })
+    },
+    async voiceStateUpdate (client, db) {
+      if (running) {
+        if (radioChannel.members.size === 0) radioChannel.leave()
+        else {
+          if (radioChannel.members.size > 0) {
+            const connection = await radioChannel.join()
+            connection.play('https://play.sittingonclouds.net/clouds')
+          }
+        }
+      }
     }
   }
 }
