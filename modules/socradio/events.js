@@ -3,7 +3,7 @@ var devnull = require('dev-null')
 const Qs = require('qs')
 var he = require('he')
 const axios = require('axios')
-const running = false
+let running = false
 let radioChannel
 module.exports = {
   events: {
@@ -110,9 +110,11 @@ module.exports = {
       if (running) {
         if (radioChannel.members.size === 0) radioChannel.leave()
         else {
+          console.log(radioChannel.members.size)
           if (radioChannel.members.size > 0) {
             const connection = await radioChannel.join()
-            connection.play('https://play.sittingonclouds.net/clouds')
+            await connection.play('https://play.sittingonclouds.net/clouds')
+            running = true
           }
         }
       }
