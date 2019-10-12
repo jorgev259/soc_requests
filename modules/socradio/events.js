@@ -50,30 +50,24 @@ module.exports = {
           })
           console.log(data)
           if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
-          console.log({
-            embed: {
-              thumbnail: {
-                url: encodeURI(`https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`)
-              },
-              fields: [
-                {
-                  name: 'Album',
-                  value: data[0].album,
-                  inline: true
-                },
-                {
-                  name: 'Artist',
-                  value: data[0].artist,
-                  inline: true
-                },
-                {
-                  name: 'Track',
-                  value: data[0].title,
-                  inline: true
-                }
-              ]
+          console.log([
+            {
+              name: 'Album',
+              value: data[0].album,
+              inline: true
+            },
+            {
+              name: 'Artist',
+              value: data[0].artist,
+              inline: true
+            },
+            {
+              name: 'Track',
+              value: data[0].title,
+              inline: true
             }
-          })
+          ]
+          )
           const newMessage = await channel.send({
             embed: {
               color: 1719241,
