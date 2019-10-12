@@ -109,13 +109,12 @@ module.exports = {
     async voiceStateUpdate (client, db) {
       if (running) {
         if (radioChannel.members.size === 0) radioChannel.leave()
-        else {
-          console.log(radioChannel.members.size)
-          if (radioChannel.members.size > 0) {
-            const connection = await radioChannel.join()
-            await connection.play('https://play.sittingonclouds.net/clouds')
-            running = true
-          }
+      } else {
+        console.log(radioChannel.members.size)
+        if (radioChannel.members.size > 0) {
+          const connection = await radioChannel.join()
+          await connection.play('https://play.sittingonclouds.net/clouds')
+          running = true
         }
       }
     }
