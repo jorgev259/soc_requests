@@ -1,6 +1,7 @@
 var icy = require('icy')
 var devnull = require('dev-null')
 const Qs = require('qs')
+var he = require('he')
 const axios = require('axios')
 
 module.exports = {
@@ -15,14 +16,15 @@ module.exports = {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
           const parsed = icy.parse(metadata)
-          const fullTitle = parsed.StreamTitle.split('-')
+          const fullTitle = he.unescape(parsed.StreamTitle.split('-'))
+          console.log(fullTitle)
           const artistComposer = fullTitle.shift().split('/')
-          const title = decodeURI(fullTitle.join('-'))
-          const artist = decodeURI(artistComposer[0])
+          const title = fullTitle.join('-')
+          const artist = artistComposer[0]
           let composer
 
           if (artistComposer.length > 1) {
-            composer = decodeURI(artistComposer[1]).trim()
+            composer = artistComposer[1].trim()
           }
 
           console.log({
@@ -44,6 +46,30 @@ module.exports = {
           })
           console.log(data)
           if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
+          console.log({
+            embed: {
+              thumbnail: {
+                url: encodeURI(`https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`)
+              },
+              fields: [
+                {
+                  name: 'Album',
+                  value: data[0].album,
+                  inline: true
+                },
+                {
+                  name: 'Artist',
+                  value: data[0].artist,
+                  inline: true
+                },
+                {
+                  name: 'Track',
+                  value: data[0].title,
+                  inline: true
+                }
+              ]
+            }
+          })
           const newMessage = await channel.send({
             embed: {
               color: 1719241,
