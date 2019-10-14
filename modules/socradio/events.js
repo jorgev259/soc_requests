@@ -8,16 +8,12 @@ module.exports = {
   events: {
     async ready (client, db) {
       const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
-      // const messages = await channel.messages.fetch()
-      // await Promise.all(messages.map(m => m.delete))
+      const messages = await channel.messages.fetch()
+      await Promise.all(messages.map(m => m.delete))
 
       let message
-      radioChannel = client.guilds.first().channels.find(c => c.name === 'Radio')
-      try {
-        await checkVoice()
-      } catch (err) {
-        console.log(err)
-      }
+      radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
+      await radioChannel.leave()
 
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
@@ -92,25 +88,19 @@ module.exports = {
       })
     },
     async voiceStateUpdate (client, db) {
-      checkVoice()
-    }
-  }
-}
-
-async function checkVoice () {
-  const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
-  if (running) {
-    if (members.size === 0) {
-      await radioChannel.leave()
-      running = false
-    }
-  } else {
-    if (members.size > 0) {
-      const connection = await radioChannel.join()
-      connection.play('https://play.sittingonclouds.net/clouds', { bitrate: 'auto' })
-      running = true
-    } else {
-      await radioChannel.leave()
+      const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
+      if (running) {
+        if (members.size === 0) {
+          await radioChannel.leave()
+          running = false
+        }
+      } else {
+        if (members.size > 0) {
+          const connection = await radioChannel.join()
+          connection.play('https://play.sittingonclouds.net/clouds', { bitrate: 'auto' })
+          running = true
+        }
+      }
     }
   }
 }
