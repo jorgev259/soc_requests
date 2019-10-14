@@ -1,7 +1,6 @@
 var icy = require('icy')
 var devnull = require('dev-null')
 const Qs = require('qs')
-var he = require('he')
 const axios = require('axios')
 let running = false
 let radioChannel
@@ -19,11 +18,10 @@ module.exports = {
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
-          console.log(metadata)
           const parsed = icy.parse(metadata)
-          const fullTitle = he.unescape(parsed.StreamTitle).split('-')
+          const fullTitle = parsed.StreamTitle.split('-')
           console.log(parsed.StreamTitle)
-          console.log(he.unescape(parsed.StreamTitle))
+          // console.log(he.unescape(parsed.StreamTitle))
           console.log(fullTitle)
           const artist = fullTitle.shift()
           const title = fullTitle.join('-')
