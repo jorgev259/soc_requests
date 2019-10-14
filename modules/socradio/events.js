@@ -20,16 +20,8 @@ module.exports = {
         res.on('metadata', async function (metadata) {
           const parsed = icy.parse(metadata)
           const fullTitle = parsed.StreamTitle.split('-')
-          console.log(parsed.StreamTitle)
-          // console.log(he.unescape(parsed.StreamTitle))
-          console.log(fullTitle)
           const artist = fullTitle.shift()
           const title = fullTitle.join('-')
-
-          console.log({
-            title: title.trim(),
-            artist: artist.trim()
-          })
 
           let { data } = await axios.get('https://api.sittingonclouds.net/song', {
             params: {
@@ -41,7 +33,7 @@ module.exports = {
               return Qs.stringify(params, { arrayFormat: 'repeat' })
             }
           })
-          console.log(data)
+
           if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
           console.log([
             {
