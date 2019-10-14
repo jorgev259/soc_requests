@@ -12,8 +12,12 @@ module.exports = {
       // await Promise.all(messages.map(m => m.delete))
 
       let message
-      radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
-      await checkVoice()
+      radioChannel = client.guilds.first().channels.find(c => c.name === 'Radio')
+      try {
+        await checkVoice()
+      } catch (err) {
+        console.log(err)
+      }
 
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
