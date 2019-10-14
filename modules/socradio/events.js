@@ -19,6 +19,7 @@ module.exports = {
       icy.get('https://play.sittingonclouds.net/clouds', function (res) {
         // log any "metadata" events that happen
         res.on('metadata', async function (metadata) {
+          console.log(metadata)
           const parsed = icy.parse(metadata)
           const fullTitle = he.unescape(parsed.StreamTitle).split('-')
           console.log(parsed.StreamTitle)
