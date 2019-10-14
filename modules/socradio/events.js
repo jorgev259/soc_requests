@@ -8,8 +8,8 @@ module.exports = {
   events: {
     async ready (client, db) {
       const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
-      const messages = await channel.messages.fetch()
-      await Promise.all(messages.map(m => m.delete))
+      // const messages = await channel.messages.fetch()
+      // await Promise.all(messages.map(m => m.delete))
 
       let message
       radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
