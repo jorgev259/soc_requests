@@ -1,13 +1,19 @@
 
 let running = false
 let radioChannel
+let message
 
 module.exports = {
   events: {
     async ready (client, db) {
-      let message
       radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
-      radioChannel.leave()
+      const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
+      if (members.size === 0) radioChannel.leave()
+      else {
+        const connection = await radioChannel.join()
+        connection.play('https://play.sittingonclouds.net/clouds', { bitrate: 'auto' })
+        running = true
+      }
 
       const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
       const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
@@ -63,7 +69,6 @@ module.exports = {
         if (message) message.delete()
         message = newMessage
       })
-      console.log('Started socket')
     },
     async voiceStateUpdate (client, db) {
       const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
