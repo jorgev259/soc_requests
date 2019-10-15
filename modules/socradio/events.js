@@ -13,7 +13,7 @@ module.exports = {
       let message
       radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
       await radioChannel.leave()
-      icy(undefined, 'https://play.sittingonclouds.net/clouds', async parsed => {
+      icy.fn('https://play.sittingonclouds.net/clouds', async parsed => {
         const fullTitle = parsed.StreamTitle.split('-')
         const artist = fullTitle.shift()
         const title = fullTitle.join('-')
