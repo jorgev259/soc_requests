@@ -1,4 +1,4 @@
-var socket = require('socket.io-client')('https://api.sittingonclouds.net')
+
 let running = false
 let radioChannel
 
@@ -13,6 +13,7 @@ module.exports = {
       const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
       await Promise.all(messages.map(m => m.delete()))
 
+      var socket = require('socket.io-client')('https://api.sittingonclouds.net')
       socket.on('metadata', async (data) => {
         console.log([
           {
