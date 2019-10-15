@@ -63,6 +63,7 @@ module.exports = {
         if (message) message.delete()
         message = newMessage
       })
+      console.log('Started socket')
     },
     async voiceStateUpdate (client, db) {
       const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
