@@ -5,6 +5,14 @@ let radioChannel
 module.exports = {
   events: {
     async ready (client, db) {
+      let message
+      radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
+      radioChannel.leave()
+
+      const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
+      const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
+      await Promise.all(messages.map(m => m.delete()))
+
       socket.on('metadata', async (data) => {
         console.log([
           {
@@ -54,14 +62,6 @@ module.exports = {
         if (message) message.delete()
         message = newMessage
       })
-
-      const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
-      const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
-      messages.map(m => m.delete())
-
-      let message
-      radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
-      radioChannel.leave()
     },
     async voiceStateUpdate (client, db) {
       const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
