@@ -1,8 +1,7 @@
-var icy = require('icy-socket')
-const Qs = require('qs')
-const axios = require('axios')
+var socket = require('socket.io-client')('https://api.sittingonclouds.net')
 let running = false
 let radioChannel
+
 module.exports = {
   events: {
     async ready (client, db) {
@@ -13,37 +12,21 @@ module.exports = {
       let message
       radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
       await radioChannel.leave()
-      icy.fn('https://play.sittingonclouds.net/clouds', async parsed => {
-        const fullTitle = parsed.StreamTitle.split('-')
-        const artist = fullTitle.shift()
-        const title = fullTitle.join('-')
-
-        let { data } = await axios.get('https://api.sittingonclouds.net/song', {
-          params: {
-            title: title.trim(),
-            artist: artist.trim()
-          },
-
-          paramsSerializer: function (params) {
-            return Qs.stringify(params, { arrayFormat: 'repeat' })
-          }
-        })
-
-        if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
+      socket.on('metadata', async (data) => {
         console.log([
           {
             name: 'Album',
-            value: data[0].album,
+            value: data.album,
             inline: true
           },
           {
             name: 'Artist',
-            value: data[0].artist,
+            value: data.artist,
             inline: true
           },
           {
             name: 'Track',
-            value: data[0].title,
+            value: data.title,
             inline: true
           }
         ]
