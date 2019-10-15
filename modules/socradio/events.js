@@ -1,5 +1,4 @@
-var icy = require('icy')
-var devnull = require('dev-null')
+var icy = require('icy-socket')
 const Qs = require('qs')
 const axios = require('axios')
 let running = false
@@ -14,77 +13,71 @@ module.exports = {
       let message
       radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
       await radioChannel.leave()
+      icy(undefined, 'https://play.sittingonclouds.net/clouds', async metadata => {
+        const parsed = icy.parse(metadata)
+        const fullTitle = parsed.StreamTitle.split('-')
+        const artist = fullTitle.shift()
+        const title = fullTitle.join('-')
 
-      icy.get('https://play.sittingonclouds.net/clouds', function (res) {
-        // log any "metadata" events that happen
-        res.on('metadata', async function (metadata) {
-          const parsed = icy.parse(metadata)
-          const fullTitle = parsed.StreamTitle.split('-')
-          const artist = fullTitle.shift()
-          const title = fullTitle.join('-')
+        let { data } = await axios.get('https://api.sittingonclouds.net/song', {
+          params: {
+            title: title.trim(),
+            artist: artist.trim()
+          },
 
-          let { data } = await axios.get('https://api.sittingonclouds.net/song', {
-            params: {
-              title: title.trim(),
-              artist: artist.trim()
-            },
-
-            paramsSerializer: function (params) {
-              return Qs.stringify(params, { arrayFormat: 'repeat' })
-            }
-          })
-
-          if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
-          console.log([
-            {
-              name: 'Album',
-              value: data[0].album,
-              inline: true
-            },
-            {
-              name: 'Artist',
-              value: data[0].artist,
-              inline: true
-            },
-            {
-              name: 'Track',
-              value: data[0].title,
-              inline: true
-            }
-          ]
-          )
-          const newMessage = await channel.send({
-            embed: {
-              color: 1719241,
-              thumbnail: {
-                url: encodeURI(`https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`)
-              },
-              title: 'Now Playing',
-              url: 'https://play.sittingonclouds.net/clouds',
-              fields: [
-                {
-                  name: 'Album',
-                  value: data[0].album,
-                  inline: true
-                },
-                {
-                  name: 'Artist',
-                  value: data[0].artist,
-                  inline: true
-                },
-                {
-                  name: 'Track',
-                  value: data[0].title,
-                  inline: true
-                }
-              ]
-            }
-          })
-          if (message) message.delete()
-          message = newMessage
+          paramsSerializer: function (params) {
+            return Qs.stringify(params, { arrayFormat: 'repeat' })
+          }
         })
 
-        res.pipe(devnull())
+        if (data.length === 0) data = [{ album: 'Not Found', artist: artist.trim(), title: title.trim() }]
+        console.log([
+          {
+            name: 'Album',
+            value: data[0].album,
+            inline: true
+          },
+          {
+            name: 'Artist',
+            value: data[0].artist,
+            inline: true
+          },
+          {
+            name: 'Track',
+            value: data[0].title,
+            inline: true
+          }
+        ]
+        )
+        const newMessage = await channel.send({
+          embed: {
+            color: 1719241,
+            thumbnail: {
+              url: encodeURI(`https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`)
+            },
+            title: 'Now Playing',
+            url: 'https://play.sittingonclouds.net/clouds',
+            fields: [
+              {
+                name: 'Album',
+                value: data[0].album,
+                inline: true
+              },
+              {
+                name: 'Artist',
+                value: data[0].artist,
+                inline: true
+              },
+              {
+                name: 'Track',
+                value: data[0].title,
+                inline: true
+              }
+            ]
+          }
+        })
+        if (message) message.delete()
+        message = newMessage
       })
     },
     async voiceStateUpdate (client, db) {
