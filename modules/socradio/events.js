@@ -35,24 +35,24 @@ module.exports = {
           embed: {
             color: 1719241,
             thumbnail: {
-              url: encodeURI(`https://radio.sittingonclouds.net/covers/${data[0].album}.jpg`)
+              url: encodeURI(`https://radio.sittingonclouds.net/covers/${data.album}.jpg`)
             },
             title: 'Now Playing',
             url: 'https://play.sittingonclouds.net/clouds',
             fields: [
               {
                 name: 'Album',
-                value: data[0].album,
+                value: data.album,
                 inline: true
               },
               {
                 name: 'Artist',
-                value: data[0].artist,
+                value: data.artist,
                 inline: true
               },
               {
                 name: 'Track',
-                value: data[0].title,
+                value: data.title,
                 inline: true
               }
             ]
