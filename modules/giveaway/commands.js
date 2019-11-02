@@ -28,7 +28,7 @@ module.exports = {
 
             db.prepare('INSERT INTO giveaway (guild,channel,code,answer) VALUES (?,?,?,?)').run(msg.guild.id, msg.channel.id, code, answer)
             checkData(msg.guild.id, msg.channel.id)
-            msg.channel.send(`Giveaway started! Use the command 'guess' to guess the missing number of the code.`)
+            msg.channel.send('Giveaway started! Use the command \'guess\' to guess the missing number of the code.')
           })
       }
     },
@@ -53,7 +53,7 @@ module.exports = {
           msg.channel.send('Try again.')
           timers[msg.guild.id][msg.channel.id][msg.author.id] = moment().unix()
           setTimeout(function (guild, channel, author) {
-            delete timers[guild][channel][author]
+            if (timers[msg.guild.id][msg.channel.id] && timers[guild][channel][author]) delete timers[guild][channel][author]
           }, 10 * 1000, msg.guild.id, msg.channel.id, msg.author.id)
         }
       }
