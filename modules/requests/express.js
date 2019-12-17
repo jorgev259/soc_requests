@@ -10,27 +10,28 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 app.set('port', process.env.PORT || 3005)
 
-var BitlyAPI = require('node-bitlyapi')
-var Bitly = new BitlyAPI({})
+// var BitlyAPI = require('node-bitlyapi')
+// var Bitly = new BitlyAPI({})
 
 module.exports = (client, db) => {
-  Bitly.setAccessToken(client.data.tokens.bitly)
+  // Bitly.setAccessToken(client.data.tokens.bitly)
   app.post('/soc/post', async (req, res) => {
     res.send({})
     console.log(req.body)
-    Bitly.shorten({ longUrl: req.body.url }, function (err, results) {
-      if (err) throw new Error(err)
-      const data = JSON.parse(results)
-      console.log(data)
-      const url = data.data.url
-      const row = db.prepare('SELECT * FROM bitly WHERE url = ?').get(url)
-      if (!row) {
-        client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
-        // telegram.sendUpdate(url, db)
-        db.prepare('INSERT INTO bitly (url) VALUES (?)').run(url)
-      }
-    })
+    // Bitly.shorten({ longUrl: req.body.url }, function (err, results) {
+    // if (err) throw new Error(err)
+    // const data = JSON.parse(results)
+    const data = { data: { url: req.body.url } }
+    console.log(data)
+    const url = data.data.url
+    const row = db.prepare('SELECT * FROM bitly WHERE url = ?').get(url)
+    if (!row) {
+      client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
+      // telegram.sendUpdate(url, db)
+      db.prepare('INSERT INTO bitly (url) VALUES (?)').run(url)
+    }
   })
+  // })
   http.listen(app.get('port'), function () {
     console.log('Web server listening on port ' + app.get('port'))
   })
