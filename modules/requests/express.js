@@ -21,6 +21,7 @@ module.exports = (client, db) => {
     Bitly.shorten({ longUrl: req.body.url }, function (err, results) {
       if (err) throw new Error(err)
       const data = JSON.parse(results)
+      console.log(data)
       const url = data.data.url
       const row = db.prepare('SELECT * FROM bitly WHERE url = ?').get(url)
       if (!row) {
