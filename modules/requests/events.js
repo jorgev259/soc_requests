@@ -1,5 +1,5 @@
 const limit = 20
-const telegram = require('./telegram.js')
+// const telegram = require('./telegram.js')
 
 module.exports.events = {
   async ready (client, db) {
@@ -45,7 +45,7 @@ module.exports.events = {
       reason: 'Submission locking/enabling Sync'
     }).catch(err => console.log(err))
 
-    telegram.login(client, db)
+    // telegram.login(client, db)
     require('./express.js')(client, db)
   }
 }
