@@ -1,6 +1,6 @@
 var express = require('express')
 var app = express()
-const telegram = require('./telegram.js')
+// const telegram = require('./telegram.js')
 
 var http = require('http').createServer(app)
 
@@ -25,7 +25,7 @@ module.exports = (client, db) => {
       const row = db.prepare('SELECT * FROM bitly WHERE url = ?').get(url)
       if (!row) {
         client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
-        telegram.sendUpdate(url, db)
+        // telegram.sendUpdate(url, db)
         db.prepare('INSERT INTO bitly (url) VALUES (?)').run(url)
       }
     })
