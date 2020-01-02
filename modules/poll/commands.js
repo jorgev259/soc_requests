@@ -11,8 +11,8 @@ const pollEmbed = require('discord.js-poll-embed')
 // There you go, now you have poll embeds
 module.exports = {
   commands: {
-    refresh: {
-      desc: 'Reposts all open requests.',
+    poll: {
+      desc: 'Opens a poll on the current channel.',
       usage: 'poll [title]/[option1],[option2]',
       async execute (client, msg, param, db) {
         param.shift()
