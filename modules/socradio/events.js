@@ -11,7 +11,7 @@ module.exports = {
       if (members.size === 0) radioChannel.leave()
       else {
         const connection = await radioChannel.join()
-        connection.play('https://play.sittingonclouds.net/clouds', { bitrate: 'auto' })
+        connection.play('https://play.squid-radio.net/clouds', { bitrate: 'auto' })
         running = true
       }
 
@@ -19,7 +19,7 @@ module.exports = {
       const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
       await Promise.all(messages.map(m => m.delete()))
 
-      var socket = require('socket.io-client')('https://api.sittingonclouds.net')
+      var socket = require('socket.io-client')('https://api.squid-radio.net')
       socket.on('metadata', async (data) => {
         console.log([
           {
@@ -43,10 +43,10 @@ module.exports = {
           embed: {
             color: 1719241,
             thumbnail: {
-              url: encodeURI(`https://radio.sittingonclouds.net/covers/${data.album}.jpg`)
+              url: encodeURI(`https://squid-radio.net/covers/${data.album}.jpg`)
             },
             title: 'Now Playing',
-            url: 'https://play.sittingonclouds.net/clouds',
+            url: 'https://play.squid-radio.net/clouds',
             fields: [
               {
                 name: 'Album',
@@ -80,7 +80,7 @@ module.exports = {
       } else {
         if (members.size > 0) {
           const connection = await radioChannel.join()
-          connection.play('https://play.sittingonclouds.net/clouds', { bitrate: 'auto' })
+          connection.play('https://play.squid-radio.net/clouds', { bitrate: 'auto' })
           running = true
         }
       }
