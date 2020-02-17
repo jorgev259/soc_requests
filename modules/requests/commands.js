@@ -88,8 +88,8 @@ module.exports = {
         if (!param[1]) return msg.channel.send('Please provide a url or name')
 
         const req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
-        const donator = msg.member.roles.some(r => r.name === 'Donators')
-        const owner = msg.member.roles.some(r => r.name === 'Owner')
+        const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
+        const owner = msg.member.roles.cache.some(r => r.name === 'Owner')
         if (!(donator || owner) && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
         if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
         const name = param.slice(1).join(' ')
@@ -115,7 +115,7 @@ module.exports = {
       desc: 'Shows how many pending requests you have.',
       async execute (client, msg, param, db) {
         let id = 0
-        if (msg.mentions.users.size > 0 && !msg.member.roles.some(r => r.name === 'Mods/News')) return msg.channel.send('Forbidden')
+        if (msg.mentions.users.size > 0 && !msg.member.roles.cache.some(r => r.name === 'Mods/News')) return msg.channel.send('Forbidden')
         else if (msg.mentions.users.size > 0) id = msg.mentions.users.first().id
         else id = msg.author.id
 
@@ -181,7 +181,7 @@ module.exports = {
 }
 
 function submit (msg, db, info) {
-  const donator = msg.member.roles.some(r => r.name === 'Donators')
+  const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
   db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
   const { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
 
@@ -302,19 +302,19 @@ function lock (msg, ammount) {
     channel.overwritePermissions({
       permissionOverwrites: [
         {
-          id: msg.guild.roles.find(r => r.name === 'BOTs').id,
+          id: msg.guild.roles.cache.find(r => r.name === 'BOTs').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: msg.guild.roles.find(r => r.name === 'Donators').id,
+          id: msg.guild.roles.cache.find(r => r.name === 'Donators').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: msg.guild.roles.find(r => r.name === 'Technicans').id,
+          id: msg.guild.roles.cache.find(r => r.name === 'Technicans').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: msg.guild.roles.find(r => r.name === 'Owner').id,
+          id: msg.guild.roles.cache.find(r => r.name === 'Owner').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {

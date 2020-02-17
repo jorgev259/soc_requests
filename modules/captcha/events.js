@@ -33,11 +33,11 @@ module.exports = {
               })
             } else if (row.captcha === msg.content) {
               const guild = client.guilds.cache.get(row.guild)
-              const role = guild.roles.find(r => r.name === 'Members')
+              const role = guild.roles.cache.find(r => r.name === 'Members')
               guild.members.fetch(msg.author.id).then(member => {
                 clearTimeout(cache[`${guild.id}_${msg.author.id}`])
                 db.prepare('DELETE FROM captcha WHERE id = ? AND guild = ?').run(msg.author.id, row.guild)
-                member.roles.add(role)
+                member.roles.cache.add(role)
               })
             } else {
               if (row.attempts === 1) {

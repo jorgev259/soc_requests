@@ -10,19 +10,19 @@ module.exports.events = {
     if (requestCount >= limit) {
       perms = [
         {
-          id: guild.roles.find(r => r.name === 'BOTs').id,
+          id: guild.roles.cache.find(r => r.name === 'BOTs').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: guild.roles.find(r => r.name === 'Donators').id,
+          id: guild.roles.cache.find(r => r.name === 'Donators').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: guild.roles.find(r => r.name === 'Technicans').id,
+          id: guild.roles.cache.find(r => r.name === 'Technicans').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {
-          id: guild.roles.find(r => r.name === 'Owner').id,
+          id: guild.roles.cache.find(r => r.name === 'Owner').id,
           allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
         },
         {

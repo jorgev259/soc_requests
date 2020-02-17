@@ -41,8 +41,8 @@ module.exports = {
             inline: true
           },
           {
-            name: `Roles [${user.roles.size - 1}]`,
-            value: user.roles.filter(r => r.name !== '@everyone').map(r => r.name).join(', ') || 'None',
+            name: `Roles [${user.roles.cache.size - 1}]`,
+            value: user.roles.cache.filter(r => r.name !== '@everyone').map(r => r.name).join(', ') || 'None',
             inline: true
           }
         ]
@@ -110,7 +110,7 @@ module.exports = {
           },
           {
             name: 'Roles',
-            value: guild.roles.size,
+            value: guild.roles.cache.size,
             inline: true
           }
         ]
