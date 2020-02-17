@@ -4,7 +4,7 @@ const limit = 20
 module.exports.events = {
   async ready (client, db) {
     const requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
-    const guild = client.guilds.first()
+    const guild = client.guilds.cache.first()
     let perms = []
 
     if (requestCount >= limit) {
@@ -40,7 +40,7 @@ module.exports.events = {
       ]
     }
 
-    guild.channels.find(c => c.name === 'requests-submission').overwritePermissions({
+    guild.channels.cache.find(c => c.name === 'requests-submission').overwritePermissions({
       permissionOverwrites: perms,
       reason: 'Submission locking/enabling Sync'
     }).catch(err => console.log(err))

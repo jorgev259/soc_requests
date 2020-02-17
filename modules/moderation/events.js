@@ -1,5 +1,5 @@
 const fs = require('fs-extra')
-let moment = require('moment')
+const moment = require('moment')
 
 let lastChallenge
 
@@ -12,14 +12,14 @@ module.exports = {
   },
   events: {
     async ready (client, db) {
-      let guild = client.guilds.first()
-      let members = await guild.members.fetch()
+      const guild = client.guilds.cache.first()
+      const members = await guild.members.fetch()
       members.forEach(member => {
         db.prepare('INSERT OR IGNORE INTO lastMessage (user, lastMessage) VALUES (?, ?)').run(member.id, moment().utc().format())
       })
 
       if (moment().isSame(lastChallenge, 'day')) {
-        let nextChallenge = lastChallenge.add(1, 'day').hour(12).minute(0)
+        const nextChallenge = lastChallenge.add(1, 'day').hour(12).minute(0)
         console.log(`Scheduling next inactivity check ${nextChallenge}`)
         setTimeout(send, moment(nextChallenge).diff(moment().utc()), client, db)
       } else {
@@ -37,11 +37,11 @@ module.exports = {
 }
 
 function send (client, db) {
-  let guild = client.guilds.first()
-  let today = moment().utc()
+  const guild = client.guilds.cache.first()
+  const today = moment().utc()
   guild.members.fetch().then(members => {
     members.forEach(member => {
-      let diff = moment().utc().diff(db.prepare('SELECT lastMessage FROM lastMessage WHERE user=?').get(member.id).lastMessage)
+      const diff = moment().utc().diff(db.prepare('SELECT lastMessage FROM lastMessage WHERE user=?').get(member.id).lastMessage)
       if (diff >= 60 * 24 * 60 * 60 * 1000) {
         console.log(`${member.user.tag}: ${diff / 1000 / 60 / 60 / 24} days inactive`)
         member.send('Youve been kicked from sittingonclouds.net for being inactive.').finally(() => {
@@ -52,7 +52,7 @@ function send (client, db) {
   })
 
   fs.writeFileSync('data/lastChallenge.txt', today.format('DD/MM/YYYY'))
-  let nextChallenge = today.add(1, 'day').hour(12).minute(0)
+  const nextChallenge = today.add(1, 'day').hour(12).minute(0)
 
   console.log(`Scheduling next inactivity check to ${nextChallenge}`)
   setTimeout(send, moment(nextChallenge).diff(moment().utc()), client, db)

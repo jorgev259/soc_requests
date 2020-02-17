@@ -9,7 +9,7 @@ module.exports = {
     ready (client, db) {
       const rows = db.prepare('SELECT id,guild,joinStamp FROM captcha').all()
       rows.forEach(row => {
-        const guild = client.guilds.get(row.guild)
+        const guild = client.guilds.cache.get(row.guild)
         guild.members.fetch(row.id).then(member => {
           // cache[`${member.guild.id}_${member.id}`] = setTimeout(member.kick, (30 * 60 * 1000) - (Date.now() - row.joinStamp))
         })
@@ -21,7 +21,7 @@ module.exports = {
         if (rows.length > 0) {
           rows.forEach(row => {
             if (msg.content.toLowerCase() === 'reroll') {
-              const guild = client.guilds.get(row.guild)
+              const guild = client.guilds.cache.get(row.guild)
               guild.members.fetch(msg.author.id).then(member => {
                 const cimg = generate()
                 const { plaintext, buffer } = cimg
@@ -32,7 +32,7 @@ module.exports = {
                 })
               })
             } else if (row.captcha === msg.content) {
-              const guild = client.guilds.get(row.guild)
+              const guild = client.guilds.cache.get(row.guild)
               const role = guild.roles.find(r => r.name === 'Members')
               guild.members.fetch(msg.author.id).then(member => {
                 clearTimeout(cache[`${guild.id}_${msg.author.id}`])
@@ -42,7 +42,7 @@ module.exports = {
             } else {
               if (row.attempts === 1) {
                 db.prepare('DELETE FROM captcha WHERE id = ? AND guild = ?').all(msg.author.id, row.guild)
-                const guild = client.guilds.get(row.guild)
+                const guild = client.guilds.cache.get(row.guild)
 
                 msg.author.send('Too many failed attempts.')
                 guild.members.fetch(msg.author.id).then(member => member.kick())

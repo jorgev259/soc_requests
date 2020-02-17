@@ -26,7 +26,7 @@ module.exports = (client, db) => {
     const url = data.data.url
     const row = db.prepare('SELECT * FROM bitly WHERE url = ?').get(url)
     if (!row) {
-      client.guilds.first().channels.find(c => c.name === 'last-added-soundtracks').send(url)
+      client.guilds.cache.first().channels.cache.find(c => c.name === 'last-added-soundtracks').send(url)
       // telegram.sendUpdate(url, db)
       db.prepare('INSERT INTO bitly (url) VALUES (?)').run(url)
     }

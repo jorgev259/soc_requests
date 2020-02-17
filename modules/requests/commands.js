@@ -55,7 +55,7 @@ module.exports = {
         const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
         if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
 
-        if (!req) return msg.channel.send(`Request not found.`)
+        if (!req) return msg.channel.send('Request not found.')
         const reason = param.slice(2).join(' ')
 
         const info = {
@@ -71,9 +71,9 @@ module.exports = {
 
         editEmbed(msg, db, info)
           .then(() => {
-            msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
+            msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
 
-            msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
+            msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
 
             lock(msg, -1)
           })
@@ -103,7 +103,7 @@ module.exports = {
           donator: donator
         }
         if (filterUrls.length > 0) {
-          let row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
+          const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
           if (row.length > 0) return msg.channel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
           info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
         }
@@ -134,19 +134,19 @@ module.exports = {
 
         const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
-        if (!req) return msg.channel.send(`Request not found.`)
+        if (!req) return msg.channel.send('Request not found.')
 
         db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, param[2] || 'NONE')
         db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
         lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
-        msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
+        msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
-          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}`)
-          msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
+          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}`)
+          msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
           const dm = await msg.guild.members.fetch(req.user)
           dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
-            msg.guild.channels.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
+            msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
           })
         })
       }
@@ -160,7 +160,7 @@ module.exports = {
 
         const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
-        if (!req) return msg.channel.send(`Request not found.`)
+        if (!req) return msg.channel.send('Request not found.')
 
         const reason = param.slice(2).join(' ')
 
@@ -169,11 +169,11 @@ module.exports = {
         db.prepare('DELETE FROM vgmdb_url WHERE request=?').run(param[1])
         lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
-        msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
+        msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
           await m.delete()
-          msg.guild.channels.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
+          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
 
-          msg.guild.channels.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
+          msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
         })
       }
     }
@@ -199,7 +199,7 @@ function sendEmbed (msg, db, info) {
   return new Promise(async (resolve, reject) => {
     if (info.oldMessage) {
       try {
-        const oldMessage = await msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(info.oldMessage)
+        const oldMessage = await msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(info.oldMessage)
         oldMessage.delete()
         console.log('Message deleted')
       } catch (err) {
@@ -237,7 +237,7 @@ function sendEmbed (msg, db, info) {
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
     } finally {
-      msg.guild.channels.find(c => c.name === 'open-requests').send({ embed })
+      msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
         .then(m => {
           db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, info.id)
           resolve()
@@ -278,7 +278,7 @@ function editEmbed (msg, db, info) {
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
     } finally {
-      msg.guild.channels.find(c => c.name === 'open-requests').messages.fetch(info.msg).then(m => {
+      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(info.msg).then(m => {
         m.edit({ embed })
           .then(m => {
             resolve()
@@ -294,7 +294,7 @@ function catchErr (msg, err) {
 }
 
 function lock (msg, ammount) {
-  const channel = msg.guild.channels.find(c => c.name === 'requests-submission')
+  const channel = msg.guild.channels.cache.find(c => c.name === 'requests-submission')
   requestCount += ammount
 
   if (requestCount >= limit && !locked) {

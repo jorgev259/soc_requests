@@ -53,14 +53,14 @@ module.exports = {
     serverinfo: {
       desc: 'Shows current server info.',
       async execute (client, msg, param, db) {
-        let guild = msg.guild
+        const guild = msg.guild
         const embed = new MessageEmbed()
           .setAuthor(guild.name, guild.iconURL())
           .setThumbnail(guild.iconURL())
           .setFooter(`ID: ${guild.id}`)
           .setTimestamp()
 
-        let members = await guild.members.fetch()
+        const members = await guild.members.fetch()
 
         embed.fields = [
           {
@@ -75,17 +75,17 @@ module.exports = {
           },
           {
             name: 'Channel Categories',
-            value: guild.channels.filter(c => c.type === 'category').size,
+            value: guild.channels.cache.filter(c => c.type === 'category').size,
             inline: true
           },
           {
             name: 'Text Channels',
-            value: guild.channels.filter(c => c.type === 'text').size,
+            value: guild.channels.cache.filter(c => c.type === 'text').size,
             inline: true
           },
           {
-            name: `Voice Channels`,
-            value: guild.channels.filter(c => c.type === 'voice').size,
+            name: 'Voice Channels',
+            value: guild.channels.cache.filter(c => c.type === 'voice').size,
             inline: true
           },
           {
@@ -126,10 +126,10 @@ module.exports = {
         if (Number.isNaN(param[1])) return msg.channel.send('Invalid Number')
 
         let place = 0
-        let promises = db.prepare(`SELECT activity,user FROM activity WHERE guild=? ORDER BY activity DESC LIMIT ${param[1]}`).all(msg.guild.id).map(async row => {
+        const promises = db.prepare(`SELECT activity,user FROM activity WHERE guild=? ORDER BY activity DESC LIMIT ${param[1]}`).all(msg.guild.id).map(async row => {
           return new Promise(async (resolve, reject) => {
             try {
-              let { user } = await msg.guild.members.fetch(row.user)
+              const { user } = await msg.guild.members.fetch(row.user)
               place++
               resolve(`\n${place}) ${user.tag}: ${row.activity} messages`)
             } catch (err) {

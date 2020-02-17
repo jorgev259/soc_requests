@@ -6,7 +6,7 @@ let message
 module.exports = {
   events: {
     async ready (client, db) {
-      radioChannel = await client.guilds.first().channels.find(c => c.name === 'Radio').fetch()
+      radioChannel = await client.guilds.cache.first().channels.cache.find(c => c.name === 'Radio').fetch()
       const members = radioChannel.members.filter(m => m.id !== m.guild.me.id)
       if (members.size === 0) radioChannel.leave()
       else {
@@ -15,7 +15,7 @@ module.exports = {
         running = true
       }
 
-      const channel = client.guilds.first().channels.find(c => c.name === 'now-playing')
+      const channel = client.guilds.cache.first().channels.cache.find(c => c.name === 'now-playing')
       const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
       await Promise.all(messages.map(m => m.delete()))
 

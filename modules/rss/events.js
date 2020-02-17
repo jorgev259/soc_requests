@@ -12,7 +12,7 @@ module.exports = {
     async ready (client, db) {
       var urls = client.data['rss.config']
       urls.forEach(async config => {
-        let url = config.url
+        const url = config.url
         const data = db.prepare('SELECT id FROM rss WHERE url=?').get(url)
         if (data) cache[url] = data.id
         else {
@@ -34,7 +34,7 @@ module.exports = {
             console.log(url)
             console.log(config.filter(item => item.url === url))
             console.log(outItems)
-            config.filter(item => item.url === url).forEach(channel => outItems.forEach(item => client.guilds.first().channels.find(c => c.name === channel.channel).send(`${item.title}\n${item.url}\n${item.pubDate}`)))
+            config.filter(item => item.url === url).forEach(channel => outItems.forEach(item => client.guilds.cache.first().channels.cache.find(c => c.name === channel.channel).send(`${item.title}\n${item.url}\n${item.pubDate}`)))
           }
 
           end()
