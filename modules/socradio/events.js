@@ -30,7 +30,7 @@ module.exports = {
               if (data !== null) {
                 stations[station] = data
 
-                const newMessage = await channel.send({
+                const sendData = {
                   embed: {
                     color: 1719241,
                     thumbnail: {
@@ -41,14 +41,15 @@ module.exports = {
                     fields: Object.keys(stations).map(stationName => {
                       return {
                         name: capitalize(stationName),
-                        value: `${stations[stationName].album} - ${stations[stationName].artist} - ${stations[stationName].title}`,
+                        value: `${stations[stationName].album} / ${stations[stationName].artist} / ${stations[stationName].title}`,
                         inline: true
                       }
                     })
                   }
-                })
-                if (message) message.delete()
-                message = newMessage
+                }
+
+                if (!message) message = await channel.send(sendData)
+                else await message.edit(sendData)
               }
             })
           })
