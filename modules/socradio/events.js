@@ -25,31 +25,31 @@ module.exports = {
       axios.get('https://api.squid-radio.net/stations')
         .then(res => {
           res.data.forEach(station => {
-            stations[station] = { title: '', artist: '', album: '' }
             socket.on(station, async (data) => {
               if (data !== null) {
                 stations[station] = data
-
-                const sendData = {
-                  embed: {
-                    color: 1719241,
-                    thumbnail: {
-                      url: `https://squid-radio.net/images/station/station_${station}.png`
-                    },
-                    title: 'Now Playing',
-                    url: 'https://squid-radio.net',
-                    fields: Object.keys(stations).map(stationName => {
-                      return {
-                        name: capitalize(stationName),
-                        value: `${stations[stationName].album} / ${stations[stationName].artist} / ${stations[stationName].title}`,
-                        inline: true
-                      }
-                    })
+                if (Object.keys(stations).length >= res.data.length) {
+                  const sendData = {
+                    embed: {
+                      color: 1719241,
+                      thumbnail: {
+                        url: `https://squid-radio.net/images/station/station_${station}.png`
+                      },
+                      title: 'Now Playing',
+                      url: 'https://squid-radio.net',
+                      fields: Object.keys(stations).map(stationName => {
+                        return {
+                          name: capitalize(stationName),
+                          value: `${stations[stationName].album} / ${stations[stationName].artist} / ${stations[stationName].title}`,
+                          inline: true
+                        }
+                      })
+                    }
                   }
-                }
 
-                if (!message) message = await channel.send(sendData)
-                else await message.edit(sendData)
+                  if (!message) message = await channel.send(sendData)
+                  else await message.edit(sendData)
+                }
               }
             })
           })
