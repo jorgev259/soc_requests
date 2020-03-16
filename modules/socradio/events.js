@@ -40,7 +40,7 @@ module.exports = {
                       fields: Object.keys(stations).map(stationName => {
                         return {
                           name: capitalize(stationName),
-                          value: `${stations[stationName].album} / ${stations[stationName].artist} / ${stations[stationName].title}`,
+                          value: `${stations[stationName].album} // ${stations[stationName].artist} // ${stations[stationName].title}`,
                           inline: true
                         }
                       })
