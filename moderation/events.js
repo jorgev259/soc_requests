@@ -1,38 +1,31 @@
-const fs = require('fs-extra')
-const moment = require('moment')
-
-let lastChallenge
+const path = require('path')
+const fs = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('fs-extra')
+const moment = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('moment')
 
 module.exports = {
-  async reqs (client, db) {
-    if (!(await fs.pathExists('data/lastChallenge.txt'))) fs.writeFileSync('data/lastChallenge.txt', moment().subtract(1, 'day').utc())
-    lastChallenge = moment(fs.readFileSync('data/lastChallenge.txt', 'utf8'), 'DD/MM/YYYY').utc()
+  async ready (client, db) {
+    const lastChallenge = moment(fs.readFileSync('data/lastChallenge.txt', 'utf8'), 'DD/MM/YYYY').utc()
 
-    db.prepare('CREATE TABLE IF NOT EXISTS lastMessage (user TEXT, lastMessage TEXT, PRIMARY KEY (user))').run()
-  },
-  events: {
-    async ready (client, db) {
-      const guild = client.guilds.cache.first()
-      const members = await guild.members.fetch()
-      members.forEach(member => {
-        db.prepare('INSERT OR IGNORE INTO lastMessage (user, lastMessage) VALUES (?, ?)').run(member.id, moment().utc().format())
-      })
-
-      if (moment().isSame(lastChallenge, 'day')) {
-        const nextChallenge = lastChallenge.add(1, 'day').hour(12).minute(0)
-        console.log(`Scheduling next inactivity check ${nextChallenge}`)
-        setTimeout(send, moment(nextChallenge).diff(moment().utc()), client, db)
-      } else {
-        console.log('Inactivity check in progress. Sending redguards...')
-        send(client, db)
-      }
-    },
-    async message (client, db, moduleName, msg) {
-      db.prepare('UPDATE lastMessage set lastMessage = ? WHERE user =?').run(moment().utc().format(), msg.author.id)
-    },
-    async guildMemberAdd (client, db, moduleName, member) {
+    const guild = client.guilds.cache.first()
+    const members = await guild.members.fetch()
+    members.forEach(member => {
       db.prepare('INSERT OR IGNORE INTO lastMessage (user, lastMessage) VALUES (?, ?)').run(member.id, moment().utc().format())
+    })
+
+    if (moment().isSame(lastChallenge, 'day')) {
+      const nextChallenge = lastChallenge.add(1, 'day').hour(12).minute(0)
+      console.log(`Scheduling next inactivity check ${nextChallenge}`)
+      setTimeout(send, moment(nextChallenge).diff(moment().utc()), client, db)
+    } else {
+      console.log('Inactivity check in progress. Sending redguards...')
+      send(client, db)
     }
+  },
+  async message (client, db, moduleName, msg) {
+    db.prepare('UPDATE lastMessage set lastMessage = ? WHERE user =?').run(moment().utc().format(), msg.author.id)
+  },
+  async guildMemberAdd (client, db, moduleName, member) {
+    db.prepare('INSERT OR IGNORE INTO lastMessage (user, lastMessage) VALUES (?, ?)').run(member.id, moment().utc().format())
   }
 }
 

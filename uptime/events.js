@@ -1,7 +1,8 @@
-const { get } = require('axios')
-const moment = require('moment')
+const path = require('path')
+const { get } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
+const moment = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('moment')
 let status
-module.exports.events = {
+module.exports = {
   async ready (client, db) {
     get('https://www.sittingonclouds.net/').then(res => {
       status = res.status === 200

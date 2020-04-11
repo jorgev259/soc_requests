@@ -1,4 +1,5 @@
-const Telegraf = require('telegraf')
+const path = require('path')
+const Telegraf = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('telegraf')
 
 let bot = null
 
@@ -18,7 +19,7 @@ module.exports = {
   sendUpdate (link, db) {
     const ids = db.prepare('SELECT id FROM telegram_chats').all()
     ids.forEach(row => bot.telegram.sendMessage(row.id, link).catch(err => {
-      if(err.code !== 400) throw new Error(err) 
+      if (err.code !== 400) throw new Error(err)
     }))
   }
 }

@@ -1,10 +1,11 @@
-var speedTest = require('speedtest-net')
-module.exports.commands = {
-  'speedtest': {
+const path = require('path')
+var speedTest = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('speedtest-net')
+module.exports = {
+  speedtest: {
     desc: 'Performs a speedtest.',
     usage: 'speedtest [server]',
     execute (client, msg, param, db) {
-      let options = { log: false }
+      const options = { log: false }
       if (param[1]) options.serverId = param[1]
 
       speedTest.visual(options, (err, data) => {

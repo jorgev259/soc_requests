@@ -1,5 +1,5 @@
 const images = ['tenor.gif', 'bonk.gif']
-module.exports.commands = {
+module.exports = {
   horny: {
     desc: 'Neutralizes a horny.',
     usage: 'horny [message ID]',

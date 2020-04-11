@@ -1,7 +1,8 @@
 
 let running = false
 let radioChannel, message
-const axios = require('axios')
+const path = require('path')
+const axios = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
 const stations = {}
 
 module.exports = {
@@ -20,7 +21,7 @@ module.exports = {
       const messages = (await channel.messages.fetch()).filter(m => m.author.id === m.guild.me.id)
       await Promise.all(messages.map(m => m.delete()))
 
-      var socket = require('socket.io-client')('https://api.squid-radio.net')
+      var socket = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('socket.io-client')('https://api.squid-radio.net')
 
       axios.get('https://api.squid-radio.net/stations')
         .then(res => {

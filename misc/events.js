@@ -1,8 +1,8 @@
-module.exports.events = {
+module.exports = {
   ready (client, db) {
     client.guilds.cache.forEach(guild => {
       if (db.prepare('SELECT guild FROM activity WHERE guild=? LIMIT 1').all(guild.id).length === 0) {
-        guild.channels.cache.cache.forEach(channel => {
+        guild.channels.cache.forEach(channel => {
           if (channel.type === 'text') {
             channel.messages.fetch().then(messages => {
               messages.forEach(msg => {

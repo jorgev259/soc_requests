@@ -1,5 +1,6 @@
 
-const pollEmbed = require('discord.js-poll-embed')
+const path = require('path')
+const pollEmbed = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('discord.js-poll-embed')
 
 // Call the pollEmbed method, first three arguments are required
 // title is the poll title
@@ -10,17 +11,15 @@ const pollEmbed = require('discord.js-poll-embed')
 
 // There you go, now you have poll embeds
 module.exports = {
-  commands: {
-    poll: {
-      desc: 'Opens a poll on the current channel.',
-      usage: 'poll [title]/[option1],[option2]',
-      async execute (client, msg, param, db) {
-        param.shift()
-        const data = param.join(' ').split('/')
-        const title = data[0]
-        const options = data[1].split(',')
-        pollEmbed(msg, title, options, 0)
-      }
+  poll: {
+    desc: 'Opens a poll on the current channel.',
+    usage: 'poll [title]/[option1],[option2]',
+    async execute (client, msg, param, db) {
+      param.shift()
+      const data = param.join(' ').split('/')
+      const title = data[0]
+      const options = data[1].split(',')
+      pollEmbed(msg, title, options, 0)
     }
   }
 }

@@ -1,16 +1,17 @@
-var express = require('express')
+const path = require('path')
+var express = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('express')
 var app = express()
-// const telegram = require('./telegram.js')
+// const telegram = require(path.join(process.cwd(), 'node_modules','import-cwd'))('./telegram.js')
 
-var http = require('http').createServer(app)
+var http = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('http').createServer(app)
 
-const bodyParser = require('body-parser')
+const bodyParser = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('body-parser')
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 app.set('port', process.env.PORT || 3005)
 
-// var BitlyAPI = require('node-bitlyapi')
+// var BitlyAPI = require(path.join(process.cwd(), 'node_modules','import-cwd'))('node-bitlyapi')
 // var Bitly = new BitlyAPI({})
 
 module.exports = (client, db) => {

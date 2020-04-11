@@ -1,186 +1,175 @@
-let requestCount = 0
-const limit = 20
-const { get } = require('axios')
-
-let locked = false
+/* eslint-disable no-async-promise-executor */
+const path = require('path')
+const { get } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
 
 module.exports = {
-  async reqs (client, db) {
-    db.prepare('CREATE TABLE IF NOT EXISTS requests (user TEXT, request TEXT, msg TEXT, donator TEXT, hold INTEGER DEFAULT \'NO\', id INTEGER PRIMARY KEY AUTOINCREMENT)').run()
-    db.prepare('CREATE TABLE IF NOT EXISTS request_log (user TEXT, request TEXT, valid TEXT, reason TEXT, timestamp DATETIME)').run()
-    db.prepare('CREATE TABLE IF NOT EXISTS telegram_chats (id TEXT PRIMARY KEY)').run()
-    db.prepare('CREATE TABLE IF NOT EXISTS bitly (url TEXT PRIMARY KEY)').run()
-    db.prepare('CREATE TABLE IF NOT EXISTS vgmdb_url (url TEXT, request TEXT)').run()
-    requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
-    if (requestCount >= limit) locked = true
-  },
-  commands: {
-    refresh: {
-      desc: 'Reposts all open requests.',
-      usage: 'refresh',
-      async execute (client, msg, param, db) {
-        const ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
-        runId(ids)
+  refresh: {
+    desc: 'Reposts all open requests.',
+    usage: 'refresh',
+    async execute (client, msg, param, db) {
+      const ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
+      runId(ids)
 
-        function runId (ids) {
-          if (!ids[0]) return
-          const row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
-
-          const info = {
-            request: row.request,
-            user: row.user,
-            id: row.id,
-            hold: row.hold === 'YES',
-            donator: row.donator === 'YES',
-            oldMessage: row.msg
-          }
-          const filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
-
-          if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')
-          sendEmbed(msg, db, info)
-            .then(() => {
-              ids.shift()
-              runId(ids)
-            })
-        }
-      }
-    },
-
-    hold: {
-      desc: 'Marks a request as ON HOLD.',
-      usage: 'hold [id] [reason]',
-      async execute (client, msg, param, db) {
-        if (!param[2]) return msg.channel.send('Incomplete command.')
-
-        const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
-        if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
-
-        if (!req) return msg.channel.send('Request not found.')
-        const reason = param.slice(2).join(' ')
+      function runId (ids) {
+        if (!ids[0]) return
+        const row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
 
         const info = {
-          request: req.request,
-          user: req.user,
-          donator: req.donator,
-          hold: true,
-          id: req.id,
-          msg: req.msg
+          request: row.request,
+          user: row.user,
+          id: row.id,
+          hold: row.hold === 'YES',
+          donator: row.donator === 'YES',
+          oldMessage: row.msg
         }
+        const filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
 
-        db.prepare('UPDATE requests SET hold = ? WHERE id=?').run('YES', info.id)
-
-        editEmbed(msg, db, info)
+        if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')
+        sendEmbed(msg, db, info)
           .then(() => {
-            msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
-
-            msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
-
-            lock(msg, -1)
+            ids.shift()
+            runId(ids)
           })
-          .catch(err => catchErr(msg, err))
       }
-    },
+    }
+  },
 
-    request: {
-      desc: 'Request a soundtrack',
-      usage: 'request [url or name]',
-      async execute (client, msg, param, db) {
-        if (!param[1]) return msg.channel.send('Please provide a url or name')
+  hold: {
+    desc: 'Marks a request as ON HOLD.',
+    usage: 'hold [id] [reason]',
+    async execute (client, msg, param, db) {
+      if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        const req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
-        const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
-        const owner = msg.member.roles.cache.some(r => r.name === 'Owner')
-        if (!(donator || owner) && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
-        if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
-        const name = param.slice(1).join(' ')
+      const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
+      if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
 
-        const filterUrls = param.filter(e => e.includes('vgmdb.net'))
-        if (filterUrls.length > 1) return msg.channel.send('You can only specify one url per request.')
+      if (!req) return msg.channel.send('Request not found.')
+      const reason = param.slice(2).join(' ')
 
-        const info = {
-          request: name,
-          user: msg.author.id,
-          donator: donator
-        }
-        if (filterUrls.length > 0) {
-          const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
-          if (row.length > 0) return msg.channel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
-          info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
-        }
-        submit(msg, db, info)
+      const info = {
+        request: req.request,
+        user: req.user,
+        donator: req.donator,
+        hold: true,
+        id: req.id,
+        msg: req.msg
       }
-    },
 
-    pending: {
-      desc: 'Shows how many pending requests you have.',
-      async execute (client, msg, param, db) {
-        let id = 0
-        if (msg.mentions.users.size > 0 && !msg.member.roles.cache.some(r => r.name === 'Mods/News')) return msg.channel.send('Forbidden')
-        else if (msg.mentions.users.size > 0) id = msg.mentions.users.first().id
-        else id = msg.author.id
+      db.prepare('UPDATE requests SET hold = ? WHERE id=?').run('YES', info.id)
 
-        const { count } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=? AND hold=?').get(id, 'NO')
-        const { countHold } = db.prepare('SELECT COUNT(*) as countHold FROM requests WHERE user=? AND hold=?').get(id, 'YES')
-        msg.channel.send(`${id === msg.author.id ? 'Pending' : `${msg.mentions.users.first().tag}'s pending`} requests: ${count}\n` +
+      editEmbed(msg, db, info)
+        .then(() => {
+          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
+
+          msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
+
+          lock(client, msg, -1)
+        })
+        .catch(err => catchErr(msg, err))
+    }
+  },
+
+  request: {
+    desc: 'Request a soundtrack',
+    usage: 'request [url or name]',
+    async execute (client, msg, param, db) {
+      const { requestCount } = client.config.requests
+      const limit = client.config.requests.limit.count
+      if (!param[1]) return msg.channel.send('Please provide a url or name')
+
+      const req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
+      const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
+      const owner = msg.member.roles.cache.some(r => r.name === 'Owner')
+      if (!(donator || owner) && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
+      if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
+      const name = param.slice(1).join(' ')
+
+      const filterUrls = param.filter(e => e.includes('vgmdb.net'))
+      if (filterUrls.length > 1) return msg.channel.send('You can only specify one url per request.')
+
+      const info = {
+        request: name,
+        user: msg.author.id,
+        donator: donator
+      }
+      if (filterUrls.length > 0) {
+        const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
+        if (row.length > 0) return msg.channel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
+        info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
+      }
+      submit(client, msg, db, info)
+    }
+  },
+
+  pending: {
+    desc: 'Shows how many pending requests you have.',
+    async execute (client, msg, param, db) {
+      let id = 0
+      if (msg.mentions.users.size > 0 && !msg.member.roles.cache.some(r => r.name === 'Mods/News')) return msg.channel.send('Forbidden')
+      else if (msg.mentions.users.size > 0) id = msg.mentions.users.first().id
+      else id = msg.author.id
+
+      const { count } = db.prepare('SELECT COUNT(*) as count FROM requests WHERE user=? AND hold=?').get(id, 'NO')
+      const { countHold } = db.prepare('SELECT COUNT(*) as countHold FROM requests WHERE user=? AND hold=?').get(id, 'YES')
+      msg.channel.send(`${id === msg.author.id ? 'Pending' : `${msg.mentions.users.first().tag}'s pending`} requests: ${count}\n` +
                          `${id === msg.author.id ? 'On Hold' : `${msg.mentions.users.first().tag}'s on hold`} requests: ${countHold}`)
-      }
-    },
+    }
+  },
 
-    complete: {
-      desc: 'Marks a request as completed.',
-      usage: 'complete [id]',
-      async execute (client, msg, param, db) {
-        if (!param[1]) return msg.channel.send('Incomplete command.')
+  complete: {
+    desc: 'Marks a request as completed.',
+    usage: 'complete [id]',
+    async execute (client, msg, param, db) {
+      if (!param[1]) return msg.channel.send('Incomplete command.')
 
-        const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
+      const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
-        if (!req) return msg.channel.send('Request not found.')
+      if (!req) return msg.channel.send('Request not found.')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, param[2] || 'NONE')
-        db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
-        lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
+      db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, param[2] || 'NONE')
+      db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
+      lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
-        msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
-          await m.delete()
-          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}`)
-          msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
-          const dm = await msg.guild.members.fetch(req.user)
-          dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
-            msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
-          })
+      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
+        await m.delete()
+        msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}`)
+        msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
+        const dm = await msg.guild.members.fetch(req.user)
+        dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
+          msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
         })
-      }
-    },
+      })
+    }
+  },
 
-    reject: {
-      desc: 'Marks a request as rejected',
-      usage: 'reject [id] [reason]',
-      async execute (client, msg, param, db) {
-        if (!param[2]) return msg.channel.send('Incomplete command.')
+  reject: {
+    desc: 'Marks a request as rejected',
+    usage: 'reject [id] [reason]',
+    async execute (client, msg, param, db) {
+      if (!param[2]) return msg.channel.send('Incomplete command.')
 
-        const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
+      const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
 
-        if (!req) return msg.channel.send('Request not found.')
+      if (!req) return msg.channel.send('Request not found.')
 
-        const reason = param.slice(2).join(' ')
+      const reason = param.slice(2).join(' ')
 
-        db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
-        db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
-        db.prepare('DELETE FROM vgmdb_url WHERE request=?').run(param[1])
-        lock(msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
+      db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
+      db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
+      db.prepare('DELETE FROM vgmdb_url WHERE request=?').run(param[1])
+      lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
-        msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
-          await m.delete()
-          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
+      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
+        await m.delete()
+        msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
 
-          msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
-        })
-      }
+        msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
+      })
     }
   }
 }
 
-function submit (msg, db, info) {
+function submit (client, msg, db, info) {
   const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
   db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
   const { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
@@ -190,7 +179,7 @@ function submit (msg, db, info) {
     .then(() => {
       msg.channel.send('Request submitted.')
 
-      lock(msg, donator ? 0 : 1)
+      lock(client, msg, donator ? 0 : 1)
     })
     .catch(err => catchErr(msg, err))
 }
@@ -293,11 +282,12 @@ function catchErr (msg, err) {
   msg.channel.send('Something went wrong.')
 }
 
-function lock (msg, ammount) {
+function lock (client, msg, ammount) {
+  const limit = client.config.requests.limit.count
   const channel = msg.guild.channels.cache.find(c => c.name === 'requests-submission')
-  requestCount += ammount
+  client.config.requests.requestCount += ammount
 
-  if (requestCount >= limit && !locked) {
+  if (client.config.requests.requestCount >= limit && !client.config.requests.locked) {
     channel.send('No more requests allowed')
     channel.overwritePermissions({
       permissionOverwrites: [
@@ -324,8 +314,8 @@ function lock (msg, ammount) {
         }
       ],
       reason: 'Submission locking'
-    }).then(() => { locked = true })
-  } else if (requestCount === limit - 1 && locked) {
+    }).then(() => { client.config.requests.locked = true })
+  } else if (client.config.requests.requestCount === limit - 1 && client.config.requests.locked) {
     channel.send('Requests open')
     channel.overwritePermissions({
       permissionOverwrites: [
@@ -335,6 +325,6 @@ function lock (msg, ammount) {
         }
       ],
       reason: 'Submission enabling'
-    }).then(() => { locked = false })
+    }).then(() => { client.config.requests.locked = false })
   }
 }

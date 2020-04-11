@@ -1,13 +1,12 @@
-const limit = 20
-// const telegram = require('./telegram.js')
+// const telegram = require(path.join(process.cwd(), 'node_modules','import-cwd'))('./telegram.js')
 
-module.exports.events = {
+module.exports = {
   async ready (client, db) {
     const requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     const guild = client.guilds.cache.first()
     let perms = []
 
-    if (requestCount >= limit) {
+    if (requestCount >= client.config.requests.limit.count) {
       perms = [
         {
           id: guild.roles.cache.find(r => r.name === 'BOTs').id,
@@ -31,7 +30,7 @@ module.exports.events = {
           allow: ['VIEW_CHANNEL']
         }
       ]
-    } else if (requestCount < limit) {
+    } else if (requestCount < client.config.requests.limit.count) {
       perms = [
         {
           id: guild.id,
@@ -40,10 +39,9 @@ module.exports.events = {
       ]
     }
 
-    guild.channels.cache.find(c => c.name === 'requests-submission').overwritePermissions({
-      permissionOverwrites: perms,
-      reason: 'Submission locking/enabling Sync'
-    }).catch(err => console.log(err))
+    guild.channels.cache.find(c => c.name === 'requests-submission')
+      .overwritePermissions(perms, 'Submission locking/enabling Sync')
+      .catch(err => console.log(err))
 
     // telegram.login(client, db)
     require('./express.js')(client, db)
