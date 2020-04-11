@@ -59,9 +59,10 @@ module.exports = {
 
       editEmbed(msg, db, info)
         .then(() => {
+          const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
           msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
 
-          msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
+          talkChannel.send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
 
           lock(client, msg, -1)
         })
@@ -80,7 +81,9 @@ module.exports = {
       const req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
       const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
       const owner = msg.member.roles.cache.some(r => r.name === 'Owner')
-      if (!(donator || owner) && req) return msg.channel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
+
+      const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
+      if (!(donator || owner) && req) return talkChannel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
       if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
       const name = param.slice(1).join(' ')
 
@@ -94,7 +97,7 @@ module.exports = {
       }
       if (filterUrls.length > 0) {
         const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
-        if (row.length > 0) return msg.channel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
+        if (row.length > 0) return talkChannel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
         info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
       }
       submit(client, msg, db, info)
@@ -162,8 +165,8 @@ module.exports = {
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
         await m.delete()
         msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
-
-        msg.guild.channels.cache.find(c => c.name === 'requests-submission').send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
+        const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
+        talkChannel.send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
       })
     }
   }
