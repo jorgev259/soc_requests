@@ -4,6 +4,7 @@ module.exports = {
   async ready (client, db) {
     const requestCount = db.prepare('SELECT COUNT(*) as count FROM requests WHERE donator = ? AND hold = ?').get('NO', 'NO').count
     const guild = client.guilds.cache.first()
+
     let perms = []
 
     if (requestCount >= client.config.requests.limit.count) {
