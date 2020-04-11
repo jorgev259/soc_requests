@@ -289,42 +289,38 @@ function lock (client, msg, ammount) {
 
   if (client.config.requests.requestCount >= limit && !client.config.requests.locked) {
     channel.send('No more requests allowed')
-    channel.overwritePermissions({
-      permissionOverwrites: [
-        {
-          id: msg.guild.roles.cache.find(r => r.name === 'BOTs').id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        },
-        {
-          id: msg.guild.roles.cache.find(r => r.name === 'Donators').id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        },
-        {
-          id: msg.guild.roles.cache.find(r => r.name === 'Technicans').id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        },
-        {
-          id: msg.guild.roles.cache.find(r => r.name === 'Owner').id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        },
-        {
-          id: msg.guild.id,
-          deny: ['SEND_MESSAGES'],
-          allow: ['VIEW_CHANNEL']
-        }
-      ],
-      reason: 'Submission locking'
-    }).then(() => { client.config.requests.locked = true })
+    channel.overwritePermissions([
+      {
+        id: msg.guild.roles.cache.find(r => r.name === 'BOTs').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.roles.cache.find(r => r.name === 'Donators').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.roles.cache.find(r => r.name === 'Technicans').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.roles.cache.find(r => r.name === 'Owner').id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      },
+      {
+        id: msg.guild.id,
+        deny: ['SEND_MESSAGES'],
+        allow: ['VIEW_CHANNEL']
+      }
+    ], 'Submission locking'
+    ).then(() => { client.config.requests.locked = true })
   } else if (client.config.requests.requestCount === limit - 1 && client.config.requests.locked) {
     channel.send('Requests open')
-    channel.overwritePermissions({
-      permissionOverwrites: [
-        {
-          id: msg.guild.id,
-          allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-        }
-      ],
-      reason: 'Submission enabling'
-    }).then(() => { client.config.requests.locked = false })
+    channel.overwritePermissions([
+      {
+        id: msg.guild.id,
+        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
+      }
+    ], 'Submission enabling'
+    ).then(() => { client.config.requests.locked = false })
   }
 }
