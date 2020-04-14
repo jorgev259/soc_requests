@@ -2,7 +2,6 @@ const path = require('path')
 const { MessageEmbed } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('discord.js')
 const moment = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('moment')
 module.exports = {
-
   whois: {
     desc: 'Shows user\'s info',
     usage: 'whois [@user]',
@@ -10,6 +9,8 @@ module.exports = {
       let user
       if (msg.mentions.members.size > 0) user = msg.mentions.members.first()
       else user = msg.member
+
+      const guildMembers = (await msg.guild.member.fetch()).sort((a, b) => a.joinedTimestamp - b.joinedTimestamp).map(e => e.id)
       const embed = new MessageEmbed()
         .setAuthor(user.user.tag, user.user.displayAvatarURL())
         .setDescription(user)
@@ -30,7 +31,7 @@ module.exports = {
         },
         {
           name: 'Join Position',
-          value: 'Soon',
+          value: guildMembers.findIndex(e => e === user.id),
           inline: true
         },
         {
