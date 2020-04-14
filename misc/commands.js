@@ -10,7 +10,7 @@ module.exports = {
       if (msg.mentions.members.size > 0) user = msg.mentions.members.first()
       else user = msg.member
 
-      const guildMembers = (await msg.guild.member.fetch()).sort((a, b) => a.joinedTimestamp - b.joinedTimestamp).map(e => e.id)
+      const guildMembers = (await msg.guild.members.fetch()).sort((a, b) => a.joinedTimestamp - b.joinedTimestamp).map(e => e.id)
       const embed = new MessageEmbed()
         .setAuthor(user.user.tag, user.user.displayAvatarURL())
         .setDescription(user)
