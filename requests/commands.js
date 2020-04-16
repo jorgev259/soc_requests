@@ -44,7 +44,8 @@ module.exports = {
       if (!param[2]) return msg.channel.send('Incomplete command.')
 
       const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
-      if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
+      // riku
+      // if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
 
       if (!req) return msg.channel.send('Request not found.')
       const reason = param.slice(2).join(' ')
