@@ -44,8 +44,7 @@ module.exports = {
       if (!param[2]) return msg.channel.send('Incomplete command.')
 
       const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
-      // riku
-      // if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
+      if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
 
       if (!req) return msg.channel.send('Request not found.')
       const reason = param.slice(2).join(' ')
@@ -196,6 +195,16 @@ module.exports = {
         msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
         const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
         talkChannel.send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
+
+        if (req.donator === 'NO') {
+          doc.useServiceAccountAuth(client.config.requests.limit.google)
+          await doc.loadInfo()
+
+          const sheetRequests = doc.sheetsByIndex[req.hold === 'YES' ? 2 : 0]
+
+          const rows = await sheetRequests.getRows()
+          rows.find(e => e.ID === param[1]).delete()
+        }
       })
     }
   }
