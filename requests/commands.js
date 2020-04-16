@@ -113,6 +113,7 @@ module.exports = {
           msg.channel.send('Request submitted.')
           lock(client, msg, donator ? 0 : 1)
 
+          doc.useServiceAccountAuth(client.config.requests.limit.google)
           await doc.loadInfo()
           const sheet = doc.sheetsByIndex[0]
           sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
