@@ -195,16 +195,16 @@ module.exports = {
         msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
         const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
         talkChannel.send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
+        // riku
+        // if (req.donator === 'NO') {
+        doc.useServiceAccountAuth(client.config.requests.limit.google)
+        await doc.loadInfo()
 
-        if (req.donator === 'NO') {
-          doc.useServiceAccountAuth(client.config.requests.limit.google)
-          await doc.loadInfo()
+        const sheetRequests = doc.sheetsByIndex[req.hold === 'YES' ? 2 : 0]
 
-          const sheetRequests = doc.sheetsByIndex[req.hold === 'YES' ? 2 : 0]
-
-          const rows = await sheetRequests.getRows()
-          rows.find(e => e.ID === param[1]).delete()
-        }
+        const rows = await sheetRequests.getRows()
+        rows.find(e => e.ID === param[1]).delete()
+        // }
       })
     }
   }
