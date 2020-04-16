@@ -77,6 +77,9 @@ module.exports = {
           sheetHold.addRow([info.id, info.name || info.request, (await msg.guild.members.fetch(info.user)).user.tag, info.user, info.vgmdb || ''])
 
           const rows = await sheetRequests.getRows()
+          console.log(rows)
+          console.logs(rows.map(e => e.ID))
+          console.log(info.id)
           rows.find(e => e.ID === info.id).delete()
         })
         .catch(err => catchErr(msg, err))
