@@ -125,7 +125,8 @@ module.exports = {
           doc.useServiceAccountAuth(client.config.requests.limit.google)
           await doc.loadInfo()
           const sheet = doc.sheetsByIndex[0]
-          if (!donator) sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
+          // riku
+          if (donator) sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
         })
         .catch(err => catchErr(msg, err))
     }
