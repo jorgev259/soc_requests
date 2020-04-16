@@ -78,7 +78,7 @@ module.exports = {
 
           const rows = await sheetRequests.getRows()
           console.log(rows)
-          console.logs(rows.map(e => e.ID))
+          console.log(rows.map(e => e.ID))
           console.log(info.id)
           rows.find(e => e.ID === info.id).delete()
         })
