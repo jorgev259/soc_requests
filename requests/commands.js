@@ -1,5 +1,6 @@
 /* eslint-disable no-async-promise-executor */
 const path = require('path')
+const moment = require('moment')
 const { get } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
 
 const { GoogleSpreadsheet } = require('google-spreadsheet')
@@ -125,8 +126,7 @@ module.exports = {
           doc.useServiceAccountAuth(client.config.requests.limit.google)
           await doc.loadInfo()
           const sheet = doc.sheetsByIndex[0]
-          // riku
-          if (donator) sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
+          if (!donator) sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
         })
         .catch(err => catchErr(msg, err))
     }
@@ -169,6 +169,18 @@ module.exports = {
         dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
           msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
         })
+
+        doc.useServiceAccountAuth(client.config.requests.limit.google)
+        await doc.loadInfo()
+        const sheetComplete = doc.sheetsByIndex[2]
+
+        sheetComplete.addRow([param[1], req.name || req.request, (await msg.guild.members.fetch(req.user)).user.tag, req.user, req.vgmdb || '', moment().format('D/M/YYYY')])
+
+        if (req.donator === 'NO') {
+          const sheetRequests = doc.sheetsByIndex[0]
+          const rows = await sheetRequests.getRows()
+          rows.find(e => e.ID === param[1].toString()).delete()
+        }
       })
     }
   },
@@ -195,16 +207,16 @@ module.exports = {
         msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
         const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
         talkChannel.send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
-        // riku
-        // if (req.donator === 'NO') {
-        doc.useServiceAccountAuth(client.config.requests.limit.google)
-        await doc.loadInfo()
 
-        const sheetRequests = doc.sheetsByIndex[req.hold === 'YES' ? 2 : 0]
+        if (req.donator === 'NO') {
+          doc.useServiceAccountAuth(client.config.requests.limit.google)
+          await doc.loadInfo()
 
-        const rows = await sheetRequests.getRows()
-        rows.find(e => e.ID === param[1]).delete()
-        // }
+          const sheetRequests = doc.sheetsByIndex[req.hold === 'YES' ? 2 : 0]
+
+          const rows = await sheetRequests.getRows()
+          rows.find(e => e.ID === param[1]).delete()
+        }
       })
     }
   }
