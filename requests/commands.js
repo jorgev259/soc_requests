@@ -61,13 +61,22 @@ module.exports = {
       db.prepare('UPDATE requests SET hold = ? WHERE id=?').run('YES', info.id)
 
       editEmbed(msg, db, info)
-        .then(() => {
+        .then(async () => {
           const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
           msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
 
           talkChannel.send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
 
           lock(client, msg, -1)
+
+          doc.useServiceAccountAuth(client.config.requests.limit.google)
+          await doc.loadInfo()
+          const sheetHold = doc.sheetsByIndex[2]
+          const sheetRequests = doc.sheetsByIndex[0]
+          sheetHold.addRow([info.id, info.name || info.request, (await msg.guild.members.fetch(info.user)).user.tag, info.user, info.vgmdb || ''])
+
+          const rows = await sheetRequests.getRows()
+          rows.find(e => e.ID === info.id).delete()
         })
         .catch(err => catchErr(msg, err))
     }
@@ -116,7 +125,7 @@ module.exports = {
           doc.useServiceAccountAuth(client.config.requests.limit.google)
           await doc.loadInfo()
           const sheet = doc.sheetsByIndex[0]
-          sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
+          if (!donator) sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
         })
         .catch(err => catchErr(msg, err))
     }
