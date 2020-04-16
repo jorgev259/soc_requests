@@ -2,8 +2,8 @@
 const path = require('path')
 const { get } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
 
-// const { GoogleSpreadsheet } = require('google-spreadsheet')
-// const doc = new GoogleSpreadsheet('1D7X2YXffGGeLUKM9D_Q0lypuKisDuXsb3Yyj-cySiHQ')
+const { GoogleSpreadsheet } = require('google-spreadsheet')
+const doc = new GoogleSpreadsheet('1D7X2YXffGGeLUKM9D_Q0lypuKisDuXsb3Yyj-cySiHQ')
 
 module.exports = {
   refresh: {
@@ -109,11 +109,13 @@ module.exports = {
 
       info.id = id
       sendEmbed(msg, db, info)
-        .then(() => {
-          console.log(info)
+        .then(async () => {
           msg.channel.send('Request submitted.')
-
           lock(client, msg, donator ? 0 : 1)
+
+          await doc.loadInfo()
+          const sheet = doc.sheetsByIndex[0]
+          sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
         })
         .catch(err => catchErr(msg, err))
     }
@@ -223,10 +225,11 @@ function sendEmbed (msg, db, info) {
         const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
 
         embed.image = { url: data.picture_small }
-        info.vgmdbUrl = `https://vgmdb.net/${data.link}`
-        const newRequest = `${data.name} (${info.vgmdbUrl})${info.hold ? ' **(ON HOLD)**' : ''}`
+        const vgmdbUrl = `https://vgmdb.net/${data.link}`
+        info.name = data.name
+        const newRequest = `${data.name} (${vgmdbUrl})${info.hold ? ' **(ON HOLD)**' : ''}`
         embed.fields[0].value = newRequest
-        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(info.vgmdbUrl, info.id)
+        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(vgmdbUrl, info.id)
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
     } finally {
