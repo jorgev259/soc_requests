@@ -2,6 +2,9 @@
 const path = require('path')
 const { get } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
 
+// const { GoogleSpreadsheet } = require('google-spreadsheet')
+// const doc = new GoogleSpreadsheet('1D7X2YXffGGeLUKM9D_Q0lypuKisDuXsb3Yyj-cySiHQ')
+
 module.exports = {
   refresh: {
     desc: 'Reposts all open requests.',
@@ -100,7 +103,19 @@ module.exports = {
         if (row.length > 0) return talkChannel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
         info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
       }
-      submit(client, msg, db, info)
+
+      db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
+      const { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
+
+      info.id = id
+      sendEmbed(msg, db, info)
+        .then(() => {
+          console.log(info)
+          msg.channel.send('Request submitted.')
+
+          lock(client, msg, donator ? 0 : 1)
+        })
+        .catch(err => catchErr(msg, err))
     }
   },
 
@@ -172,21 +187,6 @@ module.exports = {
   }
 }
 
-function submit (client, msg, db, info) {
-  const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
-  db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
-  const { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
-
-  info.id = id
-  sendEmbed(msg, db, info)
-    .then(() => {
-      msg.channel.send('Request submitted.')
-
-      lock(client, msg, donator ? 0 : 1)
-    })
-    .catch(err => catchErr(msg, err))
-}
-
 function sendEmbed (msg, db, info) {
   return new Promise(async (resolve, reject) => {
     if (info.oldMessage) {
@@ -223,9 +223,10 @@ function sendEmbed (msg, db, info) {
         const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
 
         embed.image = { url: data.picture_small }
-        const newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
+        info.vgmdbUrl = `https://vgmdb.net/${data.link}`
+        const newRequest = `${data.name} (${info.vgmdbUrl})${info.hold ? ' **(ON HOLD)**' : ''}`
         embed.fields[0].value = newRequest
-        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(`https://vgmdb.net/${data.link}`, info.id)
+        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(info.vgmdbUrl, info.id)
         db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
     } finally {
