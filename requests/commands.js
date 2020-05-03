@@ -1,10 +1,23 @@
 /* eslint-disable no-async-promise-executor */
-const path = require('path')
-const moment = require('moment')
-const { get } = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('axios')
+const moment = global.requireFn('moment')
+const { get } = global.requireFn('axios')
+const getUrls = global.requireFn('get-urls')
 
-const { GoogleSpreadsheet } = require('google-spreadsheet')
+const { GoogleSpreadsheet } = global.requireFn('google-spreadsheet')
 const doc = new GoogleSpreadsheet('1D7X2YXffGGeLUKM9D_Q0lypuKisDuXsb3Yyj-cySiHQ')
+
+async function getId (client, id, all = false) {
+  doc.useServiceAccountAuth(client.config.requests.limit.google)
+  await doc.loadInfo()
+
+  const requests = doc.sheetsByIndex[0]
+  let rows = await requests.getRows()
+  if (all) {
+    rows = [...rows, ...await doc.sheetsByIndex[1].getRows(), ...await doc.sheetsByIndex[2].getRows()]
+  }
+
+  return rows.filter(e => e.ID === id.toString())
+}
 
 module.exports = {
   refresh: {
@@ -38,100 +51,6 @@ module.exports = {
     }
   },
 
-  hold: {
-    desc: 'Marks a request as ON HOLD.',
-    usage: 'hold [id] [reason]',
-    async execute (client, msg, param, db) {
-      if (!param[2]) return msg.channel.send('Incomplete command.')
-
-      const req = db.prepare('SELECT request,msg,user,donator,hold,id FROM requests WHERE id=?').get(param[1])
-      if (req.donator === 'YES') return msg.channel.send('Donator requests cannot be put on hold.')
-
-      if (!req) return msg.channel.send('Request not found.')
-      const reason = param.slice(2).join(' ')
-
-      const info = {
-        request: req.request,
-        user: req.user,
-        donator: req.donator,
-        hold: true,
-        id: req.id,
-        msg: req.msg
-      }
-
-      db.prepare('UPDATE requests SET hold = ? WHERE id=?').run('YES', info.id)
-
-      editEmbed(msg, db, info)
-        .then(async () => {
-          const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
-          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
-
-          talkChannel.send(`The request ${req.request} from <@${req.user}> has put ON HOLD.\nReason: ${reason}`)
-
-          lock(client, msg, -1)
-
-          doc.useServiceAccountAuth(client.config.requests.limit.google)
-          await doc.loadInfo()
-          const sheetHold = doc.sheetsByIndex[2]
-          const sheetRequests = doc.sheetsByIndex[0]
-          sheetHold.addRow([info.id, info.name || info.request, (await msg.guild.members.fetch(info.user)).user.tag, info.user, info.vgmdb || ''])
-
-          const rows = await sheetRequests.getRows()
-          rows.find(e => e.ID === info.id.toString()).delete()
-        })
-        .catch(err => catchErr(msg, err))
-    }
-  },
-
-  request: {
-    desc: 'Request a soundtrack',
-    usage: 'request [url or name]',
-    async execute (client, msg, param, db) {
-      const { requestCount } = client.config.requests
-      const limit = client.config.requests.limit.count
-      if (!param[1]) return msg.channel.send('Please provide a url or name')
-
-      const req = db.prepare('SELECT request FROM requests WHERE user=? AND hold=?').get(msg.author.id, 'NO')
-      const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
-      const owner = msg.member.roles.cache.some(r => r.name === 'Owner')
-
-      const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
-      if (!(donator || owner) && req) return talkChannel.send(`The request '${req.request}' is still on place. Wait until its fulfilled or rejected.`)
-      if (!(donator || owner) && requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
-      const name = param.slice(1).join(' ')
-
-      const filterUrls = param.filter(e => e.includes('vgmdb.net'))
-      if (filterUrls.length > 1) return msg.channel.send('You can only specify one url per request.')
-
-      const info = {
-        request: name,
-        user: msg.author.id,
-        donator: donator
-      }
-      if (filterUrls.length > 0) {
-        const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(filterUrls[0])
-        if (row.length > 0) return talkChannel.send(`This soundtrack has already been requested (${filterUrls[0]})`)
-        info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info')
-      }
-
-      db.prepare('INSERT INTO requests (user,request,msg,donator) VALUES (?,?,?,?)').run(msg.author.id, info.request, 'PENDING', donator ? 'YES' : 'NO')
-      const { id } = db.prepare('SELECT id FROM requests WHERE user=? AND request=? AND msg=?').get(msg.author.id, info.request, 'PENDING')
-
-      info.id = id
-      sendEmbed(msg, db, info)
-        .then(async () => {
-          msg.channel.send('Request submitted.')
-          lock(client, msg, donator ? 0 : 1)
-
-          doc.useServiceAccountAuth(client.config.requests.limit.google)
-          await doc.loadInfo()
-          const sheet = doc.sheetsByIndex[0]
-          if (!donator) sheet.addRow([info.id, info.name || info.request, msg.author.tag, info.user, info.vgmdb || ''])
-        })
-        .catch(err => catchErr(msg, err))
-    }
-  },
-
   pending: {
     desc: 'Shows how many pending requests you have.',
     async execute (client, msg, param, db) {
@@ -147,18 +66,119 @@ module.exports = {
     }
   },
 
+  hold: {
+    desc: 'Marks a request as ON HOLD.',
+    usage: 'hold [id] [reason]',
+    async execute (client, msg, param, db) {
+      if (!param[2]) return msg.channel.send('Incomplete command.')
+
+      const req = (await getId(client, param[1]))[0]
+      if (!req) return msg.channel.send('Request not found.')
+
+      const reason = param.slice(2).join(' ')
+
+      const info = {
+        request: req.Request,
+        user: req['User ID'],
+        hold: true,
+        id: req.ID,
+        msg: req.Message,
+        url: req.Link
+      }
+
+      editEmbed(msg, db, info)
+        .then(async m => {
+          const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
+          msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${info.request}\nBy: <@${info.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
+
+          talkChannel.send(`The request ${info.request}${info.url ? ` (${info.url})` : ''} from <@${info.user}> has put ON HOLD.\nReason: ${reason}`)
+
+          lock(client, msg, -1)
+
+          doc.useServiceAccountAuth(client.config.requests.limit.google)
+          await doc.loadInfo()
+          const sheetHold = doc.sheetsByIndex[2]
+          const sheetRequests = doc.sheetsByIndex[0]
+          sheetHold.addRow([info.id, info.request, (await msg.guild.members.fetch(info.user)).user.tag, info.user, req.Link, m.id])
+
+          const rows = await sheetRequests.getRows()
+          rows.find(e => e.ID === info.id.toString()).delete()
+        })
+        .catch(err => catchErr(msg, err))
+    }
+  },
+
+  request: {
+    desc: 'Request a soundtrack',
+    usage: 'request [url or name]',
+    async execute (client, msg, param, db) {
+      if (!param[1]) return msg.channel.send('Please provide a url or name')
+
+      doc.useServiceAccountAuth(client.config.requests.limit.google)
+      await doc.loadInfo()
+
+      const requests = doc.sheetsByIndex[0]
+      const requestCount = requests.rowCount - 1
+      const limit = client.config.requests.limit.count
+
+      const donator = msg.member.roles.cache.some(r => r.name === 'Donators')
+      const owner = msg.member.roles.cache.some(r => r.name === 'Owner')
+
+      const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
+      if (!(donator || owner)) {
+        const rows = await requests.getRows()
+        const reqs = rows.filter(e => e['User ID'] === msg.author.id)
+
+        if (reqs.length > 0) return talkChannel.send(`The request '${reqs[0].Request} ${reqs[0].Link ? `(${reqs[0].Link})` : ''}' is still on place. Wait until its fulfilled or rejected.`)
+        if (requestCount >= limit) return msg.channel.send('There are too many open requests right now. Wait until slots are opened.')
+      }
+      let request = param.slice(1).join(' ')
+
+      const urls = getUrls(request, { normalizeProtocol: false, stripWWW: false, removeTrailingSlash: false, sortQueryParameters: false })
+      if (urls.size > 1) return msg.channel.send('You can only specify one url per request.')
+      let url
+
+      if (urls.size > 0) {
+        url = urls.values().next().value
+        const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(url)
+        if (row.length > 0) return talkChannel.send(`This soundtrack has already been requested (${url})`)
+        request = request.replace(url, '')
+      }
+
+      const info = {
+        id: client.config.requests.currentID + 1,
+        request: request,
+        url: url,
+        user: msg.author.id,
+        donator: donator
+      }
+
+      sendEmbed(msg, db, info)
+        .then(m => {
+          msg.channel.send('Request submitted.')
+          lock(client, msg, donator ? 0 : 1)
+
+          const page = donator ? 1 : 0
+          doc.sheetsByIndex[page].addRow([info.id, info.request, msg.author.tag, info.user, info.url, m.id])
+        })
+        .catch(err => catchErr(msg, err))
+    }
+  },
+
   complete: {
     desc: 'Marks a request as completed.',
     usage: 'complete [id]',
     async execute (client, msg, param, db) {
       if (!param[1]) return msg.channel.send('Incomplete command.')
 
-      const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
-
+      const req = (await getId(client, param[1], true))[0]
       if (!req) return msg.channel.send('Request not found.')
 
-      db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'YES\',?,datetime(\'now\'))').run(req.user, req.request, param[2] || 'NONE')
-      db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
+      db.prepare('INSERT INTO request_log (user,request,valid,timestamp) VALUES (?,?,\'YES\',datetime(\'now\'))').run(req['User ID'], `${req.Request}${req.Link ? ` (${req.Link})` : ''}`)
+      const sheetRequests = doc.sheetsByIndex[0]
+      const rows = await sheetRequests.getRows()
+      rows.find(e => e.ID === req.ID.toString()).delete()
+
       lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
@@ -233,44 +253,41 @@ function sendEmbed (msg, db, info) {
         console.log('Couldnt delete message')
       }
     }
-    const embed = {
-      fields: [
-        {
-          name: 'Request',
-          value: `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
-        },
-        {
-          name: 'Requested by',
-          value: `<@${info.user}> / ${info.user}`,
-          inline: true
-        },
-        {
-          name: 'ID',
-          value: info.id,
-          inline: true
-        }
-      ],
-      color: info.donator ? 0xedcd40 : 0x42bfed
-    }
 
     try {
-      if (info.vgmdb) {
-        const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
+      if (info.url && info.url.includes('vgmdb.net')) {
+        const { data } = await get(info.url.replace('vgmdb.net', 'vgmdb.info'))
 
-        embed.image = { url: data.picture_small }
+        info.image = { url: data.picture_small }
         const vgmdbUrl = `https://vgmdb.net/${data.link}`
-        info.name = data.name
-        const newRequest = `${data.name} (${vgmdbUrl})${info.hold ? ' **(ON HOLD)**' : ''}`
-        embed.fields[0].value = newRequest
-        db.prepare('INSERT INTO vgmdb_url (url,request) VALUES (?,?)').run(vgmdbUrl, info.id)
-        db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
+        info.request = data.name
+        info.url = vgmdbUrl
+        db.prepare('INSERT INTO vgmdb_url (url) VALUES (?)').run(vgmdbUrl)
       }
     } finally {
+      const embed = {
+        fields: [
+          {
+            name: 'Request',
+            value: `${info.request}${info.url ? ` (${info.url})` : ''}${info.hold ? ' **(ON HOLD)**' : ''}`
+          },
+          {
+            name: 'Requested by',
+            value: `<@${info.user}> / ${info.user}`,
+            inline: true
+          },
+          {
+            name: 'ID',
+            value: info.id,
+            inline: true
+          }
+        ],
+        color: info.donator ? 0xedcd40 : 0x42bfed
+      }
+      if (info.image) embed.image = info.image
+
       msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
-        .then(m => {
-          db.prepare('UPDATE requests SET msg = ? WHERE id=?').run(m.id, info.id)
-          resolve()
-        })
+        .then(resolve)
     }
   })
 }
@@ -281,7 +298,7 @@ function editEmbed (msg, db, info) {
       fields: [
         {
           name: 'Request',
-          value: `${info.request}${info.hold ? ' **(ON HOLD)**' : ''}`
+          value: `${info.request}${info.url ? ` (${info.url})` : ''}${info.hold ? ' **(ON HOLD)**' : ''}`
         },
         {
           name: 'Requested by',
@@ -298,20 +315,14 @@ function editEmbed (msg, db, info) {
     }
 
     try {
-      if (info.vgmdb) {
-        const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
-
+      if (info.url && info.url.includes('vgmdb.net')) {
+        const { data } = await get(info.url.replace('vgmdb.net', 'vgmdb.info'))
         embed.image = { url: data.picture_small }
-        const newRequest = `${data.name} (https://vgmdb.net/${data.link})${info.hold ? ' **(ON HOLD)**' : ''}`
-        embed.fields[0].value = newRequest
-        db.prepare('UPDATE requests SET request = ? WHERE id=?').run(newRequest, info.id)
       }
     } finally {
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(info.msg).then(m => {
         m.edit({ embed })
-          .then(m => {
-            resolve()
-          })
+          .then(resolve)
       })
     }
   })
