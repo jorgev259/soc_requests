@@ -1,10 +1,14 @@
 const path = require('path')
 const SauceNAO = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))('saucenao')
-const mySauce = new SauceNAO('96756c392a0d5b5382ef369a5418e7bbdaa2b39c')
+let mySauce
 
 module.exports = {
   message (client, db, moduleName, msg) {
-    if (msg.channel.name === 'aesthetics' && msg.attachments.size > 0) {
+    const { saucenaoToken } = client.config.saucenao
+    if (!mySauce) mySauce = new SauceNAO(saucenaoToken)
+
+    const item = db.prepare('SELECT channel FROM saucenao WHERE guild=? AND channel=?').get(msg.guild.id, msg.channel.id)
+    if (item && msg.attachments.size > 0) {
       msg.attachments.forEach(attach => {
         mySauce(attach.url).then(response => {
           const results = response.json.results.filter(e => parseFloat(e.header.similarity) > 80).sort((a, b) => a - b)
