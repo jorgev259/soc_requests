@@ -4,7 +4,7 @@ let mySauce
 
 module.exports = {
   message (client, db, moduleName, msg) {
-    const { saucenaoToken } = client.config.saucenao
+    const { saucenaoToken } = client.config.saucenao.config
     if (!mySauce) mySauce = new SauceNAO(saucenaoToken)
 
     const item = db.prepare('SELECT channel FROM saucenao WHERE guild=? AND channel=?').get(msg.guild.id, msg.channel.id)
