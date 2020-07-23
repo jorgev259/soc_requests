@@ -1,5 +1,5 @@
 module.exports = (client, db) => {
-  db.prepare('CREATE TABLE "saucenao" ("guild" TEXT, "channel" TEXT, PRIMARY KEY("guild","channel"))').run()
+  db.prepare('CREATE TABLE IF NOT EXISTS "saucenao" ("guild" TEXT, "channel" TEXT, PRIMARY KEY("guild","channel"))').run()
 }
 
 /*
