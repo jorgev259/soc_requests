@@ -3,11 +3,11 @@ const SauceNAO = require(path.join(process.cwd(), 'node_modules', 'import-cwd'))
 let mySauce
 
 module.exports = {
-  message (client, sequelize, moduleName, msg) {
+  async message (client, sequelize, moduleName, msg) {
     const { saucenaoToken } = client.config.saucenao.config
     if (!mySauce) mySauce = new SauceNAO(saucenaoToken)
 
-    const item = sequelize.models.saucenao.findOne({ where: { guild: msg.guild.id, channel: msg.channel.id } })
+    const item = await sequelize.models.saucenao.findOne({ where: { guild: msg.guild.id, channel: msg.channel.id } })
     if (item && msg.attachments.size > 0) {
       msg.attachments.forEach(attach => {
         mySauce(attach.url).then(response => {
