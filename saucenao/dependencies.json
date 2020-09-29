@@ -1,4 +1,5 @@
 {
     "file-type": "^14.1.2",
-    "saucenao": "0.0.2"
+    "saucenao": "0.0.2",
+    "get-urls": "^10.0.0"
 }
