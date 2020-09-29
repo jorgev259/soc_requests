@@ -9,7 +9,7 @@ module.exports = {
     if (!mySauce) mySauce = new SauceNAO(saucenaoToken)
 
     const item = await sequelize.models.saucenao.findOne({ where: { guild: msg.guild.id, channel: msg.channel.id } })
-    if (!item) return
+    if (!item || msg.author.bot) return
     if (msg.attachments.size > 0) checkAttachment(msg)
 
     const urls = getUrls(msg.content)
