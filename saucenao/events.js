@@ -10,10 +10,10 @@ module.exports = {
 
     const item = await sequelize.models.saucenao.findOne({ where: { guild: msg.guild.id, channel: msg.channel.id } })
     if (!item || msg.author.bot) return
-    if (msg.attachments.size > 0) msg.attachments.forEach(attach => handleFetch(attach.url, msg))
+    if (msg.attachments.size > 0) msg.attachments.forEach(attach => handleFetch(msg, attach.url))
 
     const urls = getUrls(msg.content)
-    if (urls.size > 0) for (const url of urls) handleFetch(url, msg)
+    if (urls.size > 0) for (const url of urls) handleFetch(msg, url)
   }
 }
 
@@ -30,8 +30,8 @@ function handleFetch (msg, url) {
       }).join(' - ')
         }`)
     }
-  }, (error) => {
+  }, error => {
     console.error('Request encountered an error')
-    console.dir(error.request)
+    console.dir(error.request || error)
   })
 }
