@@ -1,9 +1,8 @@
-// const telegram = require(path.join(process.cwd(), 'node_modules','import-cwd'))('./telegram.js')
 const { GoogleSpreadsheet } = global.requireFn('google-spreadsheet')
 const doc = new GoogleSpreadsheet('1D7X2YXffGGeLUKM9D_Q0lypuKisDuXsb3Yyj-cySiHQ')
 
 module.exports = {
-  async ready (client, db) {
+  async ready (client) {
     doc.useServiceAccountAuth(client.config.requests.limit.google)
     await doc.loadInfo()
 
@@ -56,7 +55,5 @@ module.exports = {
     guild.channels.cache.find(c => c.name === 'requests-submission')
       .overwritePermissions(perms, 'Submission locking/enabling Sync')
       .catch(err => console.log(err))
-
-    // telegram.login(client, db)
   }
 }

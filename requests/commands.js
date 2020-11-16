@@ -23,26 +23,39 @@ module.exports = {
   refresh: {
     desc: 'Reposts all open requests.',
     usage: 'refresh',
-    async execute (client, msg, param, db) {
-      const ids = db.prepare('SELECT id FROM requests ORDER BY id ASC').all().map(e => e.id)
-      runId(ids)
+    async execute (client, msg, param, sequelize) {
+      doc.useServiceAccountAuth(client.config.requests.limit.google)
+      await doc.loadInfo()
+
+      const sheetRequests = doc.sheetsByIndex[0]
+      const requestRows = await sheetRequests.getRows()
+      const requestIds = requestRows.map(e => e.ID)
+
+      const sheetDonator = doc.sheetsByIndex[1]
+      const donatorRows = await sheetDonator.getRows()
+
+      const rows = [...requestRows, ...donatorRows]
+      runId(rows)
 
       function runId (ids) {
         if (!ids[0]) return
-        const row = db.prepare('SELECT * FROM requests WHERE id = ?').get(ids[0])
+        const row = ids[0]
 
         const info = {
-          request: row.request,
-          user: row.user,
-          id: row.id,
-          hold: row.hold === 'YES',
-          donator: row.donator === 'YES',
-          oldMessage: row.msg
+          request: row.Request,
+          user: row['User ID'],
+          id: row.ID,
+          // hold: row.hold === 'YES',
+          donator: !requestIds.includes(row.ID),
+          oldMessage: row.Message
         }
-        const filterUrls = row.request.split(' ').filter(e => e.includes('vgmdb.net'))
 
-        if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')
-        sendEmbed(msg, db, info)
+        if (row.Link) {
+          const filterUrls = row.Link.split(' ').filter(e => e.includes('vgmdb.net'))
+          if (filterUrls.length > 0) info.vgmdb = filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '')
+        }
+
+        sendEmbed(msg, sequelize, info, row)
           .then(() => {
             ids.shift()
             runId(ids)
@@ -51,7 +64,7 @@ module.exports = {
     }
   },
 
-  pending: {
+  /* pending: {
     desc: 'Shows how many pending requests you have.',
     async execute (client, msg, param, db) {
       let id = 0
@@ -64,12 +77,12 @@ module.exports = {
       msg.channel.send(`${id === msg.author.id ? 'Pending' : `${msg.mentions.users.first().tag}'s pending`} requests: ${count}\n` +
                          `${id === msg.author.id ? 'On Hold' : `${msg.mentions.users.first().tag}'s on hold`} requests: ${countHold}`)
     }
-  },
+  }, */
 
   hold: {
     desc: 'Marks a request as ON HOLD.',
     usage: 'hold [id] [reason]',
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       if (!param[2]) return msg.channel.send('Incomplete command.')
 
       const req = (await getId(client, param[1]))[0]
@@ -86,7 +99,7 @@ module.exports = {
         url: req.Link
       }
 
-      editEmbed(msg, db, info)
+      editEmbed(msg, sequelize, info)
         .then(async m => {
           const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
           msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${info.request}\nBy: <@${info.user}>\nState: ON HOLD by ${msg.author}\nReason: ${reason}`)
@@ -111,7 +124,7 @@ module.exports = {
   request: {
     desc: 'Request a soundtrack',
     usage: 'request [url or name]',
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       if (!param[1]) return msg.channel.send('Please provide a url or name')
 
       doc.useServiceAccountAuth(client.config.requests.limit.google)
@@ -140,20 +153,22 @@ module.exports = {
 
       if (urls.size > 0) {
         url = urls.values().next().value
-        const row = db.prepare('SELECT * FROM vgmdb_url WHERE url = ?').all(url)
-        if (row.length > 0) return talkChannel.send(`This soundtrack has already been requested (${url})`)
+        const row = await sequelize.models.vgmdb.findByPk(url)
+        if (row) return talkChannel.send(`This soundtrack has already been requested (${url})`)
         request = request.replace(url, '')
       }
 
+      client.config.requests.currentID += 1
+
       const info = {
-        id: client.config.requests.currentID + 1,
+        id: client.config.requests.currentID,
         request: request,
         url: url,
         user: msg.author.id,
         donator: donator
       }
 
-      sendEmbed(msg, db, info)
+      sendEmbed(msg, sequelize, info)
         .then(m => {
           msg.channel.send('Request submitted.')
           lock(client, msg, donator ? 0 : 1)
@@ -168,13 +183,17 @@ module.exports = {
   complete: {
     desc: 'Marks a request as completed.',
     usage: 'complete [id]',
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       if (!param[1]) return msg.channel.send('Incomplete command.')
 
       const req = (await getId(client, param[1], true))[0]
       if (!req) return msg.channel.send('Request not found.')
 
-      db.prepare('INSERT INTO request_log (user,request,valid,timestamp) VALUES (?,?,\'YES\',datetime(\'now\'))').run(req['User ID'], `${req.Request}${req.Link ? ` (${req.Link})` : ''}`)
+      await sequelize.models.request.create({
+        user: req['User ID'],
+        request: `${req.Request}${req.Link ? ` (${req.Link})` : ''}`,
+        valid: true
+      })
       const sheetRequests = doc.sheetsByIndex[0]
       const rows = await sheetRequests.getRows()
       rows.find(e => e.ID === req.ID.toString()).delete()
@@ -208,18 +227,22 @@ module.exports = {
   reject: {
     desc: 'Marks a request as rejected',
     usage: 'reject [id] [reason]',
-    async execute (client, msg, param, db) {
+    async execute (client, msg, param, sequelize) {
       if (!param[2]) return msg.channel.send('Incomplete command.')
 
-      const req = db.prepare('SELECT request,msg,user,donator,hold FROM requests WHERE id=?').get(param[1])
-
+      const req = (await getId(client, param[1], true))[0]
       if (!req) return msg.channel.send('Request not found.')
 
       const reason = param.slice(2).join(' ')
 
-      db.prepare('INSERT INTO request_log (user,request,valid,reason,timestamp) VALUES (?,?,\'NO\',?,datetime(\'now\'))').run(req.user, req.request, reason)
-      db.prepare('DELETE FROM requests WHERE id=?').run(param[1])
-      db.prepare('DELETE FROM vgmdb_url WHERE request=?').run(param[1])
+      sequelize.models.request.create({ user: req.user, request: req.request, valid: false })
+      if (req.Link) {
+        const filterUrls = req.Link.split(' ').filter(e => e.includes('vgmdb.net'))
+        if (filterUrls.length > 0) {
+          sequelize.models.vgmdb.destroy({ where: { url: filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '') } })
+        }
+      }
+
       lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
@@ -242,57 +265,54 @@ module.exports = {
   }
 }
 
-function sendEmbed (msg, db, info) {
-  return new Promise(async (resolve, reject) => {
-    if (info.oldMessage) {
-      try {
-        const oldMessage = await msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(info.oldMessage)
-        oldMessage.delete()
-        console.log('Message deleted')
-      } catch (err) {
-        console.log('Couldnt delete message')
-      }
-    }
-
+async function sendEmbed (msg, sequelize, info, row) {
+  if (info.oldMessage) {
     try {
-      if (info.url && info.url.includes('vgmdb.net')) {
-        const { data } = await get(info.url.replace('vgmdb.net', 'vgmdb.info'))
+      const oldMessage = await msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(info.oldMessage)
+      oldMessage.delete()
+    } catch (err) {}
+  }
 
-        info.image = { url: data.picture_small }
-        const vgmdbUrl = `https://vgmdb.net/${data.link}`
-        info.request = data.name
-        info.url = vgmdbUrl
-        db.prepare('INSERT INTO vgmdb_url (url) VALUES (?)').run(vgmdbUrl)
-      }
-    } finally {
-      const embed = {
-        fields: [
-          {
-            name: 'Request',
-            value: `${info.request}${info.url ? ` (${info.url})` : ''}${info.hold ? ' **(ON HOLD)**' : ''}`
-          },
-          {
-            name: 'Requested by',
-            value: `<@${info.user}> / ${info.user}`,
-            inline: true
-          },
-          {
-            name: 'ID',
-            value: info.id,
-            inline: true
-          }
-        ],
-        color: info.donator ? 0xedcd40 : 0x42bfed
-      }
-      if (info.image) embed.image = info.image
+  try {
+    if (info.vgmdb) {
+      const { data } = await get(info.vgmdb.replace('vgmdb.net', 'vgmdb.info'))
 
-      msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
-        .then(resolve)
+      info.image = { url: data.picture_small }
+      const vgmdbUrl = `https://vgmdb.net/${data.link}`
+      info.request = data.name
+      info.url = vgmdbUrl
+
+      sequelize.models.vgmdb.findOrCreate({ where: { url: vgmdbUrl } })
     }
-  })
+  } finally {
+    const embed = {
+      fields: [
+        {
+          name: 'Request',
+          value: `${info.request}${info.url ? ` (${info.url})` : ''}${info.hold ? ' **(ON HOLD)**' : ''}`
+        },
+        {
+          name: 'Requested by',
+          value: `<@${info.user}> / ${info.user}`,
+          inline: true
+        },
+        {
+          name: 'ID',
+          value: info.id,
+          inline: true
+        }
+      ],
+      color: info.donator ? 0xedcd40 : 0x42bfed
+    }
+    if (info.image) embed.image = info.image
+
+    const sent = await msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
+    row.Message = sent.id
+    await row.save()
+  }
 }
 
-function editEmbed (msg, db, info) {
+function editEmbed (msg, sequelize, info) {
   return new Promise(async (resolve, reject) => {
     const embed = {
       fields: [
