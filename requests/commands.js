@@ -1,4 +1,5 @@
-/* eslint-disable no-async-promise-executor */
+/* eslint-disable no-async-promise-executor  */
+/* eslint-disable no-unsafe-finally */
 const moment = global.requireFn('moment')
 const { get } = global.requireFn('axios')
 const getUrls = global.requireFn('get-urls')
@@ -147,14 +148,15 @@ module.exports = {
       }
       let request = param.slice(1).join(' ')
 
-      const urls = getUrls(request, { normalizeProtocol: false, stripWWW: false, removeTrailingSlash: false, sortQueryParameters: false })
-      if (urls.size > 1) return msg.channel.send('You can only specify one url per request.')
-      let url
+      const urls = Array.from(getUrls(request, { normalizeProtocol: false, stripWWW: false, removeTrailingSlash: false, sortQueryParameters: false }))
+      if (urls.length > 1) return msg.channel.send('You can only specify one url per request.')
 
-      if (urls.size > 0) {
-        url = urls.values().next().value
+      const url = urls[0]
+
+      if (urls.length > 0) {
         const row = await sequelize.models.vgmdb.findByPk(url)
         if (row) return talkChannel.send(`This soundtrack has already been requested (${url})`)
+
         request = request.replace(url, '')
       }
 
@@ -167,6 +169,8 @@ module.exports = {
         user: msg.author.id,
         donator: donator
       }
+
+      if (url.includes('vgmdb.net')) info.vgmdb = url
 
       sendEmbed(msg, sequelize, info)
         .then(m => {
@@ -200,20 +204,20 @@ module.exports = {
 
       lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
 
-      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
+      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.Message).then(async m => {
         await m.delete()
-        msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Completed by ${msg.author}`)
-        msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}`).then(m2 => m2.delete())
-        const dm = await msg.guild.members.fetch(req.user)
-        dm.send(`Your request '${req.request}' has been uploaded!`).catch(e => {
-          msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.user}>`).then(m2 => m2.delete())
+        msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.Request}\nBy: <@${req.User}>\nState: Completed by ${msg.author}`)
+        msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.User}`).then(m2 => m2.delete())
+        const dm = await msg.guild.members.fetch(req.User)
+        dm.send(`Your request '${req.Request}' has been uploaded!`).catch(e => {
+          msg.guild.channels.cache.find(c => c.name === 'last-added-soundtracks').send(`<@${req.User}>`).then(m2 => m2.delete())
         })
 
         doc.useServiceAccountAuth(client.config.requests.limit.google)
         await doc.loadInfo()
         const sheetComplete = doc.sheetsByIndex[2]
 
-        sheetComplete.addRow([param[1], req.name || req.request, (await msg.guild.members.fetch(req.user)).user.tag, req.user, req.vgmdb || '', moment().format('D/M/YYYY')])
+        sheetComplete.addRow([param[1], req.name || req.Request, (await msg.guild.members.fetch(req.User)).user.tag, req.User, req.vgmdb || '', moment().format('D/M/YYYY')])
 
         if (req.donator === 'NO') {
           const sheetRequests = doc.sheetsByIndex[0]
@@ -230,36 +234,31 @@ module.exports = {
     async execute (client, msg, param, sequelize) {
       if (!param[2]) return msg.channel.send('Incomplete command.')
 
-      const req = (await getId(client, param[1], true))[0]
+      const req = (await getId(client, param[1]))[0]
       if (!req) return msg.channel.send('Request not found.')
 
       const reason = param.slice(2).join(' ')
 
-      sequelize.models.request.create({ user: req.user, request: req.request, valid: false })
-      if (req.Link) {
-        const filterUrls = req.Link.split(' ').filter(e => e.includes('vgmdb.net'))
-        if (filterUrls.length > 0) {
-          sequelize.models.vgmdb.destroy({ where: { url: filterUrls[0].replace('vgmdb.net', 'vgmdb.info').replace('(', '').replace(')', '') } })
-        }
+      sequelize.models.request.create({ user: req.User, request: req.Request, valid: false })
+      if (req.Link && req.Link.includes('vgmdb.net')) {
+        sequelize.models.vgmdb.destroy({ where: { url: req.Link } })
       }
 
-      lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
+      lock(client, msg, -1)
 
-      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.msg).then(async m => {
+      msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.Message).then(async m => {
         await m.delete()
-        msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.request}\nBy: <@${req.user}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
+        msg.guild.channels.cache.find(c => c.name === 'requests-log').send(`Request: ${req.Request}\nBy: <@${req.User}>\nState: Rejected by ${msg.author}\nReason: ${reason}`)
         const talkChannel = msg.guild.channels.cache.find(c => c.name === 'requests-talk')
-        talkChannel.send(`The request ${req.request} from <@${req.user}> has been rejected.\nReason: ${reason}`)
+        talkChannel.send(`The request ${req.Request} from <@${req.User}> has been rejected.\nReason: ${reason}`)
 
-        if (req.donator === 'NO') {
-          doc.useServiceAccountAuth(client.config.requests.limit.google)
-          await doc.loadInfo()
+        doc.useServiceAccountAuth(client.config.requests.limit.google)
+        await doc.loadInfo()
 
-          const sheetRequests = doc.sheetsByIndex[req.hold === 'YES' ? 2 : 0]
+        const sheetRequests = doc.sheetsByIndex[0]
 
-          const rows = await sheetRequests.getRows()
-          rows.find(e => e.ID === param[1]).delete()
-        }
+        const rows = await sheetRequests.getRows()
+        rows.find(e => e.ID === param[1]).delete()
       })
     }
   }
@@ -270,7 +269,7 @@ async function sendEmbed (msg, sequelize, info, row) {
     try {
       const oldMessage = await msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(info.oldMessage)
       oldMessage.delete()
-    } catch (err) {}
+    } catch (err) { }
   }
 
   try {
@@ -284,6 +283,8 @@ async function sendEmbed (msg, sequelize, info, row) {
 
       sequelize.models.vgmdb.findOrCreate({ where: { url: vgmdbUrl } })
     }
+  } catch (err) {
+    console.log(err)
   } finally {
     const embed = {
       fields: [
@@ -307,8 +308,12 @@ async function sendEmbed (msg, sequelize, info, row) {
     if (info.image) embed.image = info.image
 
     const sent = await msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
-    row.Message = sent.id
-    await row.save()
+    if (row) {
+      row.Message = sent.id
+      await row.save()
+    }
+
+    return sent
   }
 }
 
@@ -356,7 +361,9 @@ function catchErr (msg, err) {
 function lock (client, msg, ammount) {
   const limit = client.config.requests.limit.count
   const channel = msg.guild.channels.cache.find(c => c.name === 'requests-submission')
-  client.config.requests.requestCount += ammount
+  const requests = doc.sheetsByIndex[0]
+
+  const requestCount = requests.rowCount - 1 + ammount
 
   if (client.config.requests.requestCount >= limit && !client.config.requests.locked) {
     channel.send('No more requests allowed')
@@ -384,7 +391,7 @@ function lock (client, msg, ammount) {
       }
     ], 'Submission locking'
     ).then(() => { client.config.requests.locked = true })
-  } else if (client.config.requests.requestCount === limit - 1 && client.config.requests.locked) {
+  } else if (requestCount === limit - 1 && client.config.requests.locked) {
     channel.send('Requests open')
     channel.overwritePermissions([
       {
