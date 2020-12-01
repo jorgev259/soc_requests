@@ -107,16 +107,25 @@ module.exports = {
 
           talkChannel.send(`The request ${info.request}${info.url ? ` (${info.url})` : ''} from <@${info.user}> has put ON HOLD.\nReason: ${reason}`)
 
-          lock(client, msg, -1)
-
           doc.useServiceAccountAuth(client.config.requests.limit.google)
           await doc.loadInfo()
           const sheetHold = doc.sheetsByIndex[2]
           const sheetRequests = doc.sheetsByIndex[0]
-          sheetHold.addRow([info.id, info.request, (await msg.guild.members.fetch(info.user)).user.tag, info.user, req.Link, m.id])
 
-          const rows = await sheetRequests.getRows()
-          rows.find(e => e.ID === info.id.toString()).delete()
+          const currentCount = sheetRequests.rowCount
+
+          let userTag = ''
+          msg.guild.members.fetch(info.user).then(member => {
+            userTag = member.user.tag
+          }).finally(async () => {
+            sheetHold.addRow([info.id, info.request, userTag, info.user, req.Link, m.id])
+
+            const rows = await sheetRequests.getRows()
+            const row = rows.find(e => e.ID === info.id.toString())
+            await row.delete()
+            await sheetRequests.resize({ rowCount: currentCount - 1 })
+            lock(client, msg)
+          })
         })
         .catch(err => catchErr(msg, err))
     }
@@ -170,12 +179,12 @@ module.exports = {
         donator: donator
       }
 
-      if (url.includes('vgmdb.net')) info.vgmdb = url
+      if (url && url.includes('vgmdb.net')) info.vgmdb = url
 
       sendEmbed(msg, sequelize, info)
         .then(m => {
           msg.channel.send('Request submitted.')
-          lock(client, msg, donator ? 0 : 1)
+          lock(client, msg)
 
           const page = donator ? 1 : 0
           doc.sheetsByIndex[page].addRow([info.id, info.request, msg.author.tag, info.user, info.url, m.id])
@@ -199,10 +208,12 @@ module.exports = {
         valid: true
       })
       const sheetRequests = doc.sheetsByIndex[0]
+      const currentCount = sheetRequests.rowCount
       const rows = await sheetRequests.getRows()
       rows.find(e => e.ID === req.ID.toString()).delete()
 
-      lock(client, msg, req.donator === 'YES' || req.hold === 'YES' ? 0 : -1)
+      await sheetRequests.resize({ rowCount: currentCount - 1 })
+      lock(client, msg)
 
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.Message).then(async m => {
         await m.delete()
@@ -244,7 +255,13 @@ module.exports = {
         sequelize.models.vgmdb.destroy({ where: { url: req.Link } })
       }
 
-      lock(client, msg, -1)
+      const sheetRequests = doc.sheetsByIndex[0]
+      const currentCount = sheetRequests.rowCount
+      const rows = await sheetRequests.getRows()
+      rows.find(e => e.ID === req.ID.toString()).delete()
+
+      await sheetRequests.resize({ rowCount: currentCount - 1 })
+      lock(client, msg)
 
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.Message).then(async m => {
         await m.delete()
@@ -358,14 +375,17 @@ function catchErr (msg, err) {
   msg.channel.send('Something went wrong.')
 }
 
-function lock (client, msg, ammount) {
+async function lock (client, msg) {
+  doc.useServiceAccountAuth(client.config.requests.limit.google)
+  await doc.loadInfo()
+
   const limit = client.config.requests.limit.count
   const channel = msg.guild.channels.cache.find(c => c.name === 'requests-submission')
   const requests = doc.sheetsByIndex[0]
 
-  const requestCount = requests.rowCount - 1 + ammount
+  const requestCount = requests.rowCount - 1
 
-  if (client.config.requests.requestCount >= limit && !client.config.requests.locked) {
+  if (requestCount >= limit) {
     channel.send('No more requests allowed')
     channel.overwritePermissions([
       {
@@ -390,8 +410,8 @@ function lock (client, msg, ammount) {
         allow: ['VIEW_CHANNEL']
       }
     ], 'Submission locking'
-    ).then(() => { client.config.requests.locked = true })
-  } else if (requestCount === limit - 1 && client.config.requests.locked) {
+    )
+  } else {
     channel.send('Requests open')
     channel.overwritePermissions([
       {
@@ -399,6 +419,6 @@ function lock (client, msg, ammount) {
         allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
       }
     ], 'Submission enabling'
-    ).then(() => { client.config.requests.locked = false })
+    )
   }
 }
