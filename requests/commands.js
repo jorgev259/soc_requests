@@ -112,8 +112,6 @@ module.exports = {
           const sheetHold = doc.sheetsByIndex[2]
           const sheetRequests = doc.sheetsByIndex[0]
 
-          const currentCount = sheetRequests.rowCount
-
           let userTag = ''
           msg.guild.members.fetch(info.user).then(member => {
             userTag = member.user.tag
@@ -123,8 +121,6 @@ module.exports = {
             const rows = await sheetRequests.getRows()
             const row = rows.find(e => e.ID === info.id.toString())
             await row.delete()
-            await sheetRequests.resize({ rowCount: currentCount - 1 })
-            lock(client, msg)
           })
         })
         .catch(err => catchErr(msg, err))
@@ -184,7 +180,6 @@ module.exports = {
       sendEmbed(msg, sequelize, info)
         .then(m => {
           msg.channel.send('Request submitted.')
-          lock(client, msg)
 
           const page = donator ? 1 : 0
           doc.sheetsByIndex[page].addRow([info.id, info.request, msg.author.tag, info.user, info.url, m.id])
@@ -207,13 +202,10 @@ module.exports = {
         request: `${req.Request}${req.Link ? ` (${req.Link})` : ''}`,
         valid: true
       })
+
       const sheetRequests = doc.sheetsByIndex[0]
-      const currentCount = sheetRequests.rowCount
       const rows = await sheetRequests.getRows()
       rows.find(e => e.ID === req.ID.toString()).delete()
-
-      await sheetRequests.resize({ rowCount: currentCount - 1 })
-      lock(client, msg)
 
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.Message).then(async m => {
         await m.delete()
@@ -256,12 +248,8 @@ module.exports = {
       }
 
       const sheetRequests = doc.sheetsByIndex[0]
-      const currentCount = sheetRequests.rowCount
       const rows = await sheetRequests.getRows()
       rows.find(e => e.ID === req.ID.toString()).delete()
-
-      await sheetRequests.resize({ rowCount: currentCount - 1 })
-      lock(client, msg)
 
       msg.guild.channels.cache.find(c => c.name === 'open-requests').messages.fetch(req.Message).then(async m => {
         await m.delete()
@@ -373,52 +361,4 @@ function editEmbed (msg, sequelize, info) {
 function catchErr (msg, err) {
   console.log(err)
   msg.channel.send('Something went wrong.')
-}
-
-async function lock (client, msg) {
-  doc.useServiceAccountAuth(client.config.requests.limit.google)
-  await doc.loadInfo()
-
-  const limit = client.config.requests.limit.count
-  const channel = msg.guild.channels.cache.find(c => c.name === 'requests-submission')
-  const requests = doc.sheetsByIndex[0]
-
-  const requestCount = requests.rowCount - 1
-
-  if (requestCount >= limit) {
-    channel.send('No more requests allowed')
-    channel.overwritePermissions([
-      {
-        id: msg.guild.roles.cache.find(r => r.name === 'BOTs').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.cache.find(r => r.name === 'Donators').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.cache.find(r => r.name === 'Technicans').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.roles.cache.find(r => r.name === 'Owner').id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      },
-      {
-        id: msg.guild.id,
-        deny: ['SEND_MESSAGES'],
-        allow: ['VIEW_CHANNEL']
-      }
-    ], 'Submission locking'
-    )
-  } else {
-    channel.send('Requests open')
-    channel.overwritePermissions([
-      {
-        id: msg.guild.id,
-        allow: ['VIEW_CHANNEL', 'SEND_MESSAGES']
-      }
-    ], 'Submission enabling'
-    )
-  }
 }
