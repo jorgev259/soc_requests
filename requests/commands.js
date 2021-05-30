@@ -33,7 +33,7 @@ module.exports = {
       const requestIds = requestRows.map(e => e.ID)
 
       const sheetDonator = doc.sheetsByIndex[1]
-      const donatorRows = (await sheetDonator.getRows()).filter(row => row.State !== 'Complete')
+      const donatorRows = await sheetDonator.getRows()
 
       const rows = [...requestRows, ...donatorRows].sort((a,b) => a.ID - b.ID)
       runId(rows)
@@ -48,7 +48,8 @@ module.exports = {
           id: row.ID,
           // hold: row.hold === 'YES',
           donator: !requestIds.includes(row.ID),
-          oldMessage: row.Message
+          oldMessage: row.Message,
+          state: row.State
         }
 
         if (row.Link) {
@@ -310,15 +311,19 @@ async function sendEmbed (msg, sequelize, info, row) {
       ],
       color: info.donator ? 0xedcd40 : 0x42bfed
     }
+    
+    let sent
     if (info.image) embed.image = info.image
+    
+    if ((info.donator && info.state !== 'Complete') || !info.donator) { 
+      sent = await msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
+      if (row) {
+        row.Message = sent.id
+        await row.save()
+      }
 
-    const sent = await msg.guild.channels.cache.find(c => c.name === 'open-requests').send({ embed })
-    if (row) {
-      row.Message = sent.id
-      await row.save()
+      return sent
     }
-
-    return sent
   }
 }
 
