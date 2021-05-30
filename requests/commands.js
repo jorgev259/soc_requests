@@ -33,9 +33,9 @@ module.exports = {
       const requestIds = requestRows.map(e => e.ID)
 
       const sheetDonator = doc.sheetsByIndex[1]
-      const donatorRows = await sheetDonator.getRows()
+      const donatorRows = (await sheetDonator.getRows()).filter(row => row.State !== 'Complete')
 
-      const rows = [...requestRows, ...donatorRows]
+      const rows = [...requestRows, ...donatorRows].sort((a,b) => a.ID - b.ID)
       runId(rows)
 
       function runId (ids) {
